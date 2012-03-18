@@ -3,3 +3,5 @@ deploy
 *.pyc
 scripts/BeautifulSoup.py
 assets/*.wav
+.*.swp
+node_modules
