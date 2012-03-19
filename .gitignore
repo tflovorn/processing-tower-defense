@@ -5,3 +5,7 @@ scripts/BeautifulSoup.py
 assets/*.wav
 .*.swp
 node_modules
+npm-debug.log
+public/*.js
+public/*.css
+public/*.html

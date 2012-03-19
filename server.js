@@ -1,5 +1,11 @@
 var express = require('express')
-  , nowjs = require('now');
+  , nowjs = require('now')
+  , ams = require('ams')
+  , clientDir = __dirname + '/client'
+  , publicDir = __dirname + '/public'
+  , depsDir = __dirname + '/deps'
+  , npmDir = __dirname + '/node_modules';
+
 
 var app = express.createServer();
 
@@ -52,3 +58,22 @@ var connectToGame = function (clientId) {
 var disconnectFromGame = function (clientId) {
   
 };
+
+// use ams to build web filesystem
+var buildStaticFiles = function () {
+  // client script
+  ams.build
+    .create(publicDir)
+    .add(clientDir + '/client.js')
+    .combine({js: 'client.js'})
+    .write(publicDir)
+  .end();
+  // other pages and dependencies
+  ams.build
+    .create(publicDir)
+    .add(depsDir + '/headjs/src/load.js')
+    .add(clientDir + '/index.html')
+    .write(publicDir)
+  .end();
+};
+buildStaticFiles();
