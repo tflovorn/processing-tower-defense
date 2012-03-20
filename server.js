@@ -30,7 +30,8 @@ buildStaticFiles();
 
 // start Express server, serving publicDir as static content
 var app = express.createServer(
-  express.static(publicDir)  // replace with connect-gzip later
+    express.logger()
+  , express.static(publicDir)  // replace with connect-gzip later
 );
 app.listen(3000);
 
@@ -41,18 +42,15 @@ var everyone = nowjs.initialize(app);
 // (may want a separate file for Player object related things)
 var Player = function(clientNow) {
   var p = new Object();
-  p.token = clientNow.token;
   p.room = clientNow.room;
   return p;
 }
 
-// client enters with token
-nowjs.on('connect', function() {
+everyone.now.register = function (token) {
   // "this" refers to the client's namespace in this scope
-  this.now.room = connectToGame(this.user.clientId, token);
-  players[this.user.clientId] = new Player(this.now);
+  this.now.room = connectToGame(this, token);
   nowjs.getGroup(this.now.room).addUser(this.user.clientId);
-});
+}
 
 // client leaves
 nowjs.on('disconnect', function() {
@@ -62,13 +60,13 @@ nowjs.on('disconnect', function() {
 });
 
 // stubby
-var connectToGame = function (clientId) {
-  var t = players[clientId].token;
-  if (t === null || t === undefined) {
-    // default room
-    return 0;
+var connectToGame = function (client, token) {
+  var id = client.user.clientId;
+  var p = players[id];
+  if (p === null || p === undefined) {
+    players[id] = new Player(client.now);
   }
-  var room = tokenToRoomId[t];
+  var room = tokenToRoomId[token];
   if (room === undefined || isNaN(room)) {
     // default again
     return 0;
