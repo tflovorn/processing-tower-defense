@@ -1,22 +1,44 @@
 var express = require('express')
+  , fs = require('fs')
   , nowjs = require('now')
   , ams = require('ams')
   , clientDir = __dirname + '/client'
   , publicDir = __dirname + '/public'
   , depsDir = __dirname + '/deps'
-  , npmDir = __dirname + '/node_modules';
-
-
-var app = express.createServer();
-
-app.listen(3000);
-
-var everyone = nowjs.initialize(app);
-
-var players = []
+  , npmDir = __dirname + '/node_modules'
+  , players = []
   , tokenToRoomId = {};
 
-// construct a Player object by pulling data from a client's now namespace
+// use ams to build public filesystem
+var buildStaticFiles = function () {
+  // client script
+  ams.build
+    .create(publicDir)
+    .add(clientDir + '/client.js')
+    .combine({js: 'client.js'})
+    .write(publicDir)
+  .end();
+  // other pages and dependencies
+  ams.build
+    .create(publicDir)
+    .add(depsDir + '/headjs/src/load.js')
+    .add(clientDir + '/index.html')
+    .write(publicDir)
+  .end();
+};
+buildStaticFiles();
+
+// start Express server, serving publicDir as static content
+var app = express.createServer(
+  express.static(publicDir)  // replace with connect-gzip later
+);
+app.listen(3000);
+
+// start nowjs watching the server
+var everyone = nowjs.initialize(app);
+
+// Constructor for Player; pulls data from a client's now namespace.
+// (may want a separate file for Player object related things)
 var Player = function(clientNow) {
   var p = new Object();
   p.token = clientNow.token;
@@ -59,21 +81,4 @@ var disconnectFromGame = function (clientId) {
   
 };
 
-// use ams to build web filesystem
-var buildStaticFiles = function () {
-  // client script
-  ams.build
-    .create(publicDir)
-    .add(clientDir + '/client.js')
-    .combine({js: 'client.js'})
-    .write(publicDir)
-  .end();
-  // other pages and dependencies
-  ams.build
-    .create(publicDir)
-    .add(depsDir + '/headjs/src/load.js')
-    .add(clientDir + '/index.html')
-    .write(publicDir)
-  .end();
-};
-buildStaticFiles();
+
