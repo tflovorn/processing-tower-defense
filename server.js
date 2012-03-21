@@ -1,13 +1,24 @@
 var express = require('express')
-  , fs = require('fs')
   , nowjs = require('now')
+  , io = require('socket.io')
+  , fs = require('fs')
   , ams = require('ams')
   , clientDir = __dirname + '/client'
   , publicDir = __dirname + '/public'
   , depsDir = __dirname + '/deps'
   , npmDir = __dirname + '/node_modules'
+  , gamePort = 3000
+  , lobbyPort = 3001
   , players = []
   , tokenToRoomId = {};
+
+// Constructor for Player; pulls data from a client's now namespace.
+// (may want a separate file for Player object related things)
+var Player = function(clientNow) {
+  var p = new Object();
+  p.room = clientNow.room;
+  return p;
+}
 
 // use ams to build public filesystem
 var buildStaticFiles = function () {
@@ -28,23 +39,17 @@ var buildStaticFiles = function () {
 };
 buildStaticFiles();
 
-// start Express server, serving publicDir as static content
+// --- Game client communication ---
+
+// start public-facing Express server, serving publicDir as static content
 var app = express.createServer(
     express.logger()
   , express.static(publicDir)  // replace with connect-gzip later
 );
-app.listen(3000);
+app.listen(gamePort);
 
-// start nowjs watching the server
+// start nowjs watching the public server
 var everyone = nowjs.initialize(app);
-
-// Constructor for Player; pulls data from a client's now namespace.
-// (may want a separate file for Player object related things)
-var Player = function(clientNow) {
-  var p = new Object();
-  p.room = clientNow.room;
-  return p;
-}
 
 everyone.now.register = function (token) {
   // "this" refers to the client's namespace in this scope
@@ -79,4 +84,14 @@ var disconnectFromGame = function (clientId) {
   
 };
 
+// --- Lobby communication ---
 
+// start private server to communicate with lobby
+// ~ will want to add access control to this channel ~
+io = io.listen(lobbyPort);
+
+io.sockets.on('connection', function (socket) {
+  socket.on('start game', function (token) {
+
+  });
+});
