@@ -92,6 +92,10 @@ io = io.listen(lobbyPort);
 
 io.sockets.on('connection', function (socket) {
   socket.on('start game', function (token) {
+    console.log("got token " + token);
+    // set up game
 
+    // done with setup
+    socket.emit('game ready');
   });
 });
