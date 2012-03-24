@@ -4,5 +4,6 @@ npm dependencies:
 
     express
     socket.io
+    socket.io-client
     now
     ams

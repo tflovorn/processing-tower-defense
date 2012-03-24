@@ -1,5 +1,5 @@
 var io = require('socket.io-client')
-  , games = []
+  , room = []
   , gameServers = ["http://localhost:3001"];
 
 // stub
@@ -24,10 +24,12 @@ var readyGame = function (gameId) {
   // If this socket will get garbage collected, we need to store it
   // (in a global list of open game server sockets?)
   socket.on('game ready', function () {
+    console.log("got game ready on token " + token);
+    // tell clients wating on this game to start
 
   });
 
-  // tell game server to start
+  // tell game server to start running a game with given token
   socket.emit('start game', token);
 };
 

@@ -10,13 +10,13 @@ var express = require('express')
   , gamePort = 3000
   , lobbyPort = 3001
   , players = []
-  , tokenToRoomId = {};
+  , tokenToGameId = {};
 
 // Constructor for Player; pulls data from a client's now namespace.
 // (may want a separate file for Player object related things)
 var Player = function(clientNow) {
   var p = new Object();
-  p.room = clientNow.room;
+  p.game = clientNow.game;
   return p;
 }
 
@@ -25,15 +25,15 @@ var buildStaticFiles = function () {
   // client script
   ams.build
     .create(publicDir)
-    .add(clientDir + '/client.js')
-    .combine({js: 'client.js'})
+    .add(clientDir + '/game.js')
+    .combine({js: 'game.js'})
     .write(publicDir)
   .end();
   // other pages and dependencies
   ams.build
     .create(publicDir)
     .add(depsDir + '/headjs/src/load.js')
-    .add(clientDir + '/index.html')
+    .add(clientDir + '/game.html')
     .write(publicDir)
   .end();
 };
@@ -53,15 +53,15 @@ var everyone = nowjs.initialize(app);
 
 everyone.now.register = function (token) {
   // "this" refers to the client's namespace in this scope
-  this.now.room = connectToGame(this, token);
-  nowjs.getGroup(this.now.room).addUser(this.user.clientId);
+  this.now.game = connectToGame(this, token);
+  nowjs.getGroup(this.now.game).addUser(this.user.clientId);
 }
 
 // client leaves
 nowjs.on('disconnect', function() {
   // same as before, "this" refers to the client's namespace in this scope
   disconnectFromGame(this.user.clientId);
-  nowjs.getGroup(this.now.room).removeUser(this.user.clientId);
+  nowjs.getGroup(this.now.game).removeUser(this.user.clientId);
 });
 
 // stubby
@@ -71,12 +71,12 @@ var connectToGame = function (client, token) {
   if (p === null || p === undefined) {
     players[id] = new Player(client.now);
   }
-  var room = tokenToRoomId[token];
-  if (room === undefined || isNaN(room)) {
+  var game = tokenToGameId[token];
+  if (game === undefined || isNaN(game)) {
     // default again
     return 0;
   }
-  return room;
+  return game;
 };
 
 // stub
