@@ -4,11 +4,10 @@ var express = require('express')
   , fs = require('fs')
   , ams = require('ams')
   , clientDir = __dirname + '/client'
-  , publicDir = __dirname + '/public'
+  , publicDir = __dirname + '/game_public'
   , depsDir = __dirname + '/deps'
-  , npmDir = __dirname + '/node_modules'
   , gamePort = 3000
-  , lobbyPort = 3001
+  , lobbyMessagePort = 3001
   , players = []
   , tokenToGameId = {};
 
@@ -20,8 +19,8 @@ var Player = function(clientNow) {
   return p;
 }
 
-// use ams to build public filesystem
-var buildStaticFiles = function () {
+// Use ams to build public filesystem for game.
+var buildGameStatic = function () {
   // client script
   ams.build
     .create(publicDir)
@@ -37,7 +36,7 @@ var buildStaticFiles = function () {
     .write(publicDir)
   .end();
 };
-buildStaticFiles();
+buildGameStatic();
 
 // --- Game client communication ---
 
@@ -51,7 +50,12 @@ app.listen(gamePort);
 // start nowjs watching the public server
 var everyone = nowjs.initialize(app);
 
-everyone.now.register = function (token) {
+// Client wants to enter the game associated with the given token.
+// Also comes with an auth object; TODO: check this with login server.
+everyone.now.register = function (token, auth) {
+  // Check if auth object is ok
+
+  // authorized; let client into the game
   // "this" refers to the client's namespace in this scope
   this.now.game = connectToGame(this, token);
   nowjs.getGroup(this.now.game).addUser(this.user.clientId);
@@ -88,7 +92,7 @@ var disconnectFromGame = function (clientId) {
 
 // start private server to communicate with lobby
 // ~ will want to add access control to this channel ~
-io = io.listen(lobbyPort);
+io = io.listen(lobbyMessagePort);
 
 io.sockets.on('connection', function (socket) {
   socket.on('start game', function (token) {

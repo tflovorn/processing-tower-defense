@@ -6,6 +6,9 @@ assets/*.wav
 .*.swp
 node_modules
 npm-debug.log
-public/*.js
-public/*.css
-public/*.html
+game_public/*.js
+game_public/*.css
+game_public/*.html
+lobby_public/*.js
+lobby_public/*.css
+lobby_public/*.html
