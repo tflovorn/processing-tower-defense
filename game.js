@@ -8,17 +8,71 @@ var express = require('express')
   , depsDir = __dirname + '/deps'
   , gamePort = 3000
   , lobbyMessagePort = 3001
-  , players = []
+  , clients = []
+  , games = []
   , tokenToGameId = {};
 
-// Constructor for Player; pulls data from a client's now namespace.
-// (may want a separate file for Player object related things)
-var Player = function(clientNow) {
-  var p = new Object();
-  p.game = clientNow.game;
-  return p;
+// --- Object definitions. ---
+// Client object constructor.
+var Client = function (id, name) {
+  var client = new Object();
+  client.id = id;
+  client.name = name;
+  client.game = null;
+
+  return client;
 }
 
+// Game object constructor.
+var Game = function (id, token) {
+  var game = new Object();
+  game.id = id;
+  game.token = token;
+  game.clients = [];
+
+  // Get names of all clients in the game.
+  // stub
+  game.clientNames = function () {
+    var names = [];
+    for (var i = 0; i < game.clients.length; i++) {
+      names.push(clients[game.clients[i]].name);
+    }
+    return names
+  };
+
+  // Return information client needs to render the game.
+  game.info = function () {
+    return [game.clientNames()];
+  };
+
+  // Add a client to this game.
+  game.join = function (client) {
+    // Don't allow a client to swap games.
+    if (client.game && client.game !== game.id) {
+      return null;
+    }
+    // If the client is new, add them.
+    if (client.game === null) {
+      client.game = game.id;
+      if (game.clients.indexOf(client.id) === -1) {
+        game.clients.push(client.id);
+      }
+      nowjs.getGroup(game.id).addUser(client.id);
+    }
+  };
+
+  // Remove a client from this game.
+  // stub
+  game.leave = function (client) {
+    
+  };
+
+  return game;
+}
+games[0] = Game(0, 0);
+tokenToGameId[0] = 0;
+
+// --- Start the server. ---
 // Use ams to build public filesystem for game.
 var buildGameStatic = function () {
   // client script
@@ -38,8 +92,6 @@ var buildGameStatic = function () {
 };
 buildGameStatic();
 
-// --- Game client communication ---
-
 // start public-facing Express server, serving publicDir as static content
 var app = express.createServer(
     express.logger()
@@ -50,15 +102,19 @@ app.listen(gamePort);
 // start nowjs watching the public server
 var everyone = nowjs.initialize(app);
 
+// --- Game to client communication ---
 // Client wants to enter the game associated with the given token.
 // Also comes with an auth object; TODO: check this with login server.
-everyone.now.register = function (token, auth) {
+everyone.now.register = function (token, auth, name) {
   // Check if auth object is ok
 
   // authorized; let client into the game
   // "this" refers to the client's namespace in this scope
-  this.now.game = connectToGame(this, token);
-  nowjs.getGroup(this.now.game).addUser(this.user.clientId);
+  var client = Client(this.user.clientId, name);
+  clients[this.user.clientId] = client;
+  var game = connectToGame(client, token);
+  // Send client back the data it needs to render the game.
+  this.now.recieveGameInfo(game.info());
 }
 
 // client leaves
@@ -68,28 +124,25 @@ nowjs.on('disconnect', function() {
   nowjs.getGroup(this.now.game).removeUser(this.user.clientId);
 });
 
+// Connect the client with given id to the game with given token.
 // stubby
 var connectToGame = function (client, token) {
-  var id = client.user.clientId;
-  var p = players[id];
-  if (p === null || p === undefined) {
-    players[id] = new Player(client.now);
-  }
-  var game = tokenToGameId[token];
-  if (game === undefined || isNaN(game)) {
+  var gameId = tokenToGameId[token];
+  if (gameId === undefined || isNaN(gameId)) {
     // default again
-    return 0;
+    gameId = 0;
   }
-  return game;
+  games[gameId].join(client);
+  return games[gameId];
 };
 
+// Remove the client with given id from its game.
 // stub
 var disconnectFromGame = function (clientId) {
   
 };
 
-// --- Lobby communication ---
-
+// --- Lobby to game communication ---
 // start private server to communicate with lobby
 // ~ will want to add access control to this channel ~
 io = io.listen(lobbyMessagePort);

@@ -59,7 +59,7 @@ var Client = function (id, name) {
   };
 
   return client;
-}
+};
 
 // Lobby room object constructor.
 var Room = function(id, name) {
@@ -75,12 +75,12 @@ var Room = function(id, name) {
     // build list of client names from clientIds
     var names = [];
     return names;
-  }
+  };
 
   // Information client needs to render the room.
   room.info = function () {
     return [room.name, room.clientNames(), room.chat];
-  }
+  };
 
   // Add a client to this room.
   room.join = function (client) {
@@ -88,15 +88,15 @@ var Room = function(id, name) {
     client.leaveCurrentRoom();
     // join this room
     client.room = room.id;
-    room.clients.push(client);
+    room.clients.push(client.id);
     nowjs.getGroup(room.id).addUser(client.id);
-  }
+  };
 
   // Remove a client from this room.
   // stub
   room.leave = function (client) {
 
-  }
+  };
 
   return room;
 };
@@ -110,9 +110,9 @@ everyone.now.register = function (auth, name) {
 
   // authorized; let client into the front room of the lobby
   var client = Client(this.user.clientId, name);
+  clients[this.user.clientId] = client;
   var room = enterLobby(client);
   // Send client back the data it needs for the room.
-  console.log(room.info());
   this.now.recieveRoomInfo(room.info());
 };
 
@@ -120,7 +120,7 @@ var enterLobby = function (client) {
   var entryRoom = 0;
   rooms[entryRoom].join(client);
   return rooms[entryRoom];
-}
+};
 
 // --- Game server communication. ---
 // All players are reported ready on a game. Start it!
