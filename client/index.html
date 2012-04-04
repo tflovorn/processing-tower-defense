@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Multiplayer PTD</title>
+  </head>
+  <body>
+    <script src="/load.js"></script>
+    <script src="http://localhost:3002/nowjs/now.js"></script>
+    <script>
+      head.js('http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'
+      , '/login.js');
+    </script>
+
+    <form name="loginForm" action="" method="GET">
+    Username: <input type="text" name="login" /><br />
+    Password: <input type="password" name="pass" /><br />
+    <input type="button" name="loginButton" value="Log in"
+           onClick="doLogin(this.form)" /><br />
+    </form>
+  </body>
+</html>

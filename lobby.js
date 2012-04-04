@@ -112,8 +112,9 @@ var everyone = nowjs.initialize(app);
 // Take user login information; return (ok, authToken, lobbyPath)
 // login/pass are probably unencrypted here - should encrypt them!
 everyone.now.authenticate = function (login, pass) {
+  var self = this;
   checkUserLogin(login, pass, function (response) {
-    this.now.receiveLoginInfo(response["ok"], response["authToken"]
+    self.now.receiveLoginInfo(response["ok"], response["authToken"]
                             , lobbyPath);
   });
 };
