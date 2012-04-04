@@ -20,10 +20,12 @@ var Client = function (id, name) {
   client.id = id;
   client.name = name;
   client.room = null;
+  client.ready = false;
 
   // Remove this client from its room.
   client.leaveCurrentRoom = function () {
     if (client.room !== null && client.room !== undefined) {
+      client.ready = false;
       var room = rooms[client.room]
       if (room !== null && room !== undefined) {
         room.leave(client);
@@ -66,9 +68,15 @@ var Room = function(id, name) {
   };
 
   // Remove a client from this room.
-  // stub
+  // TODO
   room.leave = function (client) {
 
+  };
+
+  // Check if all clients are ready.
+  // TODO
+  room.allReady = function () {
+    return true;
   };
 
   return room;
@@ -143,17 +151,39 @@ var enterLobby = function (client) {
   return rooms[entryRoom];
 };
 
+everyone.now.clientReady = function () {
+  client = clients[this.user.clientId];
+  if (client === null || client === undefined) {
+    return;
+  }
+  roomId = client.room;
+  if (roomId === null || roomId === undefined) {
+    return;
+  }
+  room = rooms[roomId];
+  if (room === null || roomId === undefined) {
+    return;
+  }
+  client.ready = true;
+  if (room.allReady()) {
+    startGame(room);
+  }
+};
+
 // --- Game server communication. ---
-// All players are reported ready on a game. Start it!
-var readyGame = function (gameId) {
-  // TODO: check if all clients are still ready
+// All players are reported ready on a room. Start it!
+var startGame = function (room) {
+  // check if all clients are still ready
+  if (!room.allReady()) {
+    return;
+  }
 
   // TODO: generate token
   var token = 0;
 
   // get the best game server and connect to it
   var server = pickGameServer();
-  var socket = io.connect(server);
+  var socket = io.connect(server["message"]);
 
   // schedule letting clients know when game is ready
   // Important question: are we sure that this will still happen even after
@@ -163,7 +193,7 @@ var readyGame = function (gameId) {
   socket.on('game ready', function () {
     console.log("got game ready on token " + token);
     // tell clients wating on this game to start
-
+    nowjs.getGroup(room.id).now.startGame(token, server["game"]);
   });
 
   // tell game server to start running a game with given token
@@ -172,7 +202,7 @@ var readyGame = function (gameId) {
 
 // TODO: Choose the most suitable game server.
 var pickGameServer = function () {
-  return gameServers[0][message];
+  return gameServers[0];
 }
 
 // --- Database server communication ---
