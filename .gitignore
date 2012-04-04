@@ -6,9 +6,11 @@ assets/*.wav
 .*.swp
 node_modules
 npm-debug.log
+game_public
 game_public/*.js
 game_public/*.css
 game_public/*.html
+lobby_public
 lobby_public/*.js
 lobby_public/*.css
 lobby_public/*.html

@@ -1,10 +1,10 @@
 var startLobby = function () {
-  var auth = 0;
+  var auth = "A";
   now.ready(function() {
-    now.register(auth, "Test user");
+    now.register(auth);
   }); 
 };
 
-now.recieveRoomInfo = function(info) {
+now.receiveRoomInfo = function(info) {
   alert(info);
 }

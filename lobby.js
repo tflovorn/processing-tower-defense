@@ -5,42 +5,15 @@ var express = require('express')
   , clientDir = __dirname + '/client'
   , publicDir = __dirname + '/lobby_public'
   , depsDir = __dirname + '/deps'
-  , lobbyPort = 3002
+  , lobbyPath = clientDir + '/lobby.html'
+  , loginLobbyPort = 3002
   , clients = []
   , rooms = []
   , gameServers = [{message: "http://localhost:3001"
-                  , game: "http://localhost:3000"}];
+                  , game: "http://localhost:3000"}]
+  , dbFrontEnd = "http://localhost:3003";
 
-// Use ams to build public filesystem.
-var buildLobbyStatic = function () {
-  // client script
-  ams.build
-    .create(publicDir)
-    .add(clientDir + '/lobby.js')
-    .combine({js: 'lobby.js'})
-    .write(publicDir)
-  .end();
-  // other pages and dependencies
-  ams.build
-    .create(publicDir)
-    .add(depsDir + '/headjs/src/load.js')
-    .add(clientDir + '/lobby.html')
-    .write(publicDir)
-  .end();
-
-};
-buildLobbyStatic();
-
-// Start lobby public-facing server.
-var app = express.createServer(
-    express.logger()
-  , express.static(publicDir)
-);
-app.listen(lobbyPort);
-
-// Start nowjs watching the public server.
-var everyone = nowjs.initialize(app);
-
+// --- Lobby objects ---
 // Client object constructor.
 var Client = function (id, name) {
   var client = new Object();
@@ -103,17 +76,64 @@ var Room = function(id, name) {
 // Create entrance room.
 rooms[0] = Room(0, "Entry Lobby");
 
-// Client enters lobby.
-// Comes in carrying an auth object from the login server (TODO: check this).
-everyone.now.register = function (auth, name) {
-  // check if auth object is ok
+// --- Start login + lobby server ---
+// Use ams to build public filesystem.
+var buildLobbyStatic = function () {
+  // page scripts
+  ams.build
+    .create(publicDir)
+    .add(clientDir + '/login.js')
+    .add(clientDir + '/lobby.js')
+    .write(publicDir)
+  .end();
+  // other pages and dependencies
+  ams.build
+    .create(publicDir)
+    .add(depsDir + '/headjs/src/load.js')
+    .add(clientDir + '/index.html')
+    .add(lobbyPath)
+    .write(publicDir)
+  .end();
 
-  // authorized; let client into the front room of the lobby
-  var client = Client(this.user.clientId, name);
-  clients[this.user.clientId] = client;
-  var room = enterLobby(client);
-  // Send client back the data it needs for the room.
-  this.now.recieveRoomInfo(room.info());
+};
+buildLobbyStatic();
+
+// Start express server.
+var app = express.createServer(
+    express.logger()
+  , express.static(publicDir)
+);
+app.listen(loginLobbyPort);
+
+// Start nowjs watching the public server.
+var everyone = nowjs.initialize(app);
+
+// --- Login ---
+// Take user login information; return (ok, authToken, lobbyPath)
+// login/pass are probably unencrypted here - should encrypt them!
+everyone.now.authenticate = function (login, pass) {
+  checkUserLogin(login, pass, function (response) {
+    this.now.receiveLoginInfo(response["ok"], response["authToken"]
+                            , lobbyPath);
+  });
+};
+
+// --- Lobby management ---
+// Client enters lobby, carrying an auth object from the login server.
+everyone.now.register = function (authToken) {
+  var self = this;
+  // check if auth object is ok
+  checkUserAuth(authToken, function (response) {
+    if (!response["ok"]) {
+      return;
+    }
+    // authorized; let client into the front room of the lobby
+    var client = Client(self.user.clientId, authToken);
+    clients[self.user.clientId] = client;
+    var room = enterLobby(client);
+    // Send client back the data it needs for the room.
+    self.now.receiveRoomInfo(room.info());
+  });
 };
 
 var enterLobby = function (client) {
@@ -125,9 +145,9 @@ var enterLobby = function (client) {
 // --- Game server communication. ---
 // All players are reported ready on a game. Start it!
 var readyGame = function (gameId) {
-  // check if all clients are still ready
+  // TODO: check if all clients are still ready
 
-  // generate token
+  // TODO: generate token
   var token = 0;
 
   // get the best game server and connect to it
@@ -149,7 +169,31 @@ var readyGame = function (gameId) {
   socket.emit('start game', token);
 };
 
-// Choose the most suitable game server.
+// TODO: Choose the most suitable game server.
 var pickGameServer = function () {
   return gameServers[0][message];
 }
+
+// --- Database server communication ---
+
+// Send the given (message, data) pair to the DB frontend.
+// When a response is recieved, call the given callback.
+// TODO: may need to hold on to socket to prevent it from being gc'd.
+var sendDBMessage = function (message, data, callback) {
+  // connect to database frontend
+  var socket = io.connect(dbFrontEnd);
+  // prepare to recieve response
+  socket.on("response", function (response) {
+    callback(response);
+  });
+  // send message
+  socket.emit(message, data);
+}
+
+var checkUserLogin = function (login, pass, callback) {
+  sendDBMessage("auth user login", {login: login, pass: pass}, callback);
+};
+
+var checkUserAuth = function (authToken, callback) {
+  sendDBMessage("auth user token", authToken, callback);
+};
