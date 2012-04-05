@@ -1,4 +1,5 @@
 var io = require('socket.io')
+  , mysql = require('mysql-libmysqlclient')
   , dbFrontPort = 3003;
 
 io = io.listen(dbFrontPort);
@@ -21,3 +22,23 @@ io.sockets.on('connection', function (socket) {
     socket.emit("response", {ok: ok});
   });
 });
+
+// TODO
+// Does this have the necessary input params / outputs?
+var dbQuery = function (dbConnection, query, callback) {
+  // TODO: actual db connection
+  // in setup:
+  // conn = mysql.createConnectionSync();
+  // conn.connectSync(host, user, password, database);
+  // if (!conn.connectedSync()) {
+  // sys.puts("Connection error " + conn.connectErrno + ": " + conn.connectError);
+  // process.exit(1);
+  // }
+  // here:
+  // dbConnection.query(query, callback);
+  // on program exit:
+  // process.on('exit', function () {
+  //  conn.closeSync();
+  // }
+  callback(result);
+}
