@@ -19,8 +19,13 @@ To install npm dependencies, do:
 The npm dependencies are:
 
 [express](http://expressjs.com/)
+
 [socket.io](http://socket.io/)
+
 [socket.io-client](https://github.com/LearnBoost/socket.io-client)
+
 [now](http://nowjs.com/)
+
 [ams](https://github.com/kof/node-ams)
+
 [mysql-libmysqlclient](http://sannis.github.com/node-mysql-libmysqlclient/index.html)
