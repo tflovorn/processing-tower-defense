@@ -166,14 +166,35 @@ everyone.now.register = function (authToken) {
     clients[self.user.clientId] = client;
     var room = enterLobby(client);
     // Send client back the data it needs for the room.
-    self.now.receiveRoomInfo(room.info());
+    self.now.receiveRoomInfo(room.info(), roomNames());
   });
 };
 
 var enterLobby = function (client) {
-  var entryRoom = 0;
-  rooms[entryRoom].join(client);
-  return rooms[entryRoom];
+  rooms[entryRoomId].join(client);
+  return rooms[entryRoomId];
+};
+
+var roomNames = function () {
+  var names = [];
+  for (var i = 0; i < rooms.length; i++) {
+    names[i] = rooms[i].name;
+  }
+  return names;
+};
+
+// TODO
+everyone.now.joinRoom = function (roomId) {
+
+};
+
+everyone.now.newRoom = function () {
+  client = clients[this.user.clientId];
+  client.leaveCurrentRoom();
+  var room = Room(rooms.length, client.name + "'s room", true);
+  room.join(client);
+  rooms.push(room);
+  this.now.receiveRoomInfo(room.info(), roomNames());
 };
 
 everyone.now.clientReady = function () {
@@ -208,7 +229,7 @@ var startGame = function (room) {
   }
 
   // TODO: generate token
-  var token = 0;
+  var token = "A";
 
   // get the best game server and connect to it
   var server = pickGameServer();
