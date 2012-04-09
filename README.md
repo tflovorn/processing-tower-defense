@@ -6,6 +6,8 @@ Details of the multiplayer implementation inspired by [setgame](https://github.c
 
 # Dependencies
 
+Requires Node.js and npm ([install instructions here](https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager)).
+
 [mysql-libmysqlclient](http://sannis.github.com/node-mysql-libmysqlclient/index.html) requires libmysqlclient. On Ubuntu, this is installed with
 
     sudo apt-get install libmysqlclient-dev

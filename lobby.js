@@ -9,15 +9,25 @@ var express = require('express')
   , loginLobbyPort = 3002
   , clients = []
   , rooms = []
+  , entryRoomId = 0
   , gameServers = [{message: "http://localhost:3001"
                   , game: "http://localhost:3000"}]
   , dbFrontEnd = "http://localhost:3003";
 
+// Array Remove - By John Resig (MIT Licensed)
+// http://ejohn.org/blog/javascript-array-remove/
+Array.prototype.remove = function(from, to) {
+  var rest = this.slice((to || from) + 1 || this.length);
+  this.length = from < 0 ? this.length + from : from;
+  return this.push.apply(this, rest);
+};
+
 // --- Lobby objects ---
 // Client object constructor.
-var Client = function (id, name) {
+var Client = function (id, authToken, name) {
   var client = new Object();
   client.id = id;
+  client.authToken = authToken;
   client.name = name;
   client.room = null;
   client.ready = false;
@@ -30,6 +40,7 @@ var Client = function (id, name) {
       if (room !== null && room !== undefined) {
         room.leave(client);
       }
+      client.room = null;
     }
   };
 
@@ -37,18 +48,22 @@ var Client = function (id, name) {
 };
 
 // Lobby room object constructor.
-var Room = function(id, name) {
+var Room = function(id, name, canStartGame) {
   var room = new Object();
   room.id = id;
   room.name = name;
-  room.clients = [];
+  room.canStartGame = canStartGame; // false for entry room
+  room.clients = [];  // list of clientIds present in this room
   room.chat = [];
 
   // Get names of all clients in the room.
-  // stub
   room.clientNames = function () {
     // build list of client names from clientIds
     var names = [];
+    for (var i = 0; i < room.clients.length; i++) {
+      var client = clients[room.clients[i]];
+      names.push(client.name);
+    }
     return names;
   };
 
@@ -68,21 +83,31 @@ var Room = function(id, name) {
   };
 
   // Remove a client from this room.
-  // TODO
-  room.leave = function (client) {
-
+  room.leave = function (leavingClient) {
+    for (var i = 0; i < room.clients.length; i++) {
+      var client = clients[room.clients[i]];
+      if (client.id === leavingClient.id) {
+        room.clients.remove(i);
+        nowjs.getGroup(room.id).removeUser(client.id);
+      }
+    }
   };
 
   // Check if all clients are ready.
-  // TODO
   room.allReady = function () {
+    for (var i = 0; i < room.clients.length; i++) {
+      var client = clients[room.clients[i]];
+      if (!client.ready) {
+        return false;
+      }
+    }
     return true;
   };
 
   return room;
 };
 // Create entrance room.
-rooms[0] = Room(0, "Entry Lobby");
+rooms[entryRoomId] = Room(entryRoomId, "Entry Lobby", false);
 
 // --- Start login + lobby server ---
 // Use ams to build public filesystem.
@@ -137,7 +162,7 @@ everyone.now.register = function (authToken) {
       return;
     }
     // authorized; let client into the front room of the lobby
-    var client = Client(self.user.clientId, authToken);
+    var client = Client(self.user.clientId, authToken, response["username"]);
     clients[self.user.clientId] = client;
     var room = enterLobby(client);
     // Send client back the data it needs for the room.
@@ -173,6 +198,10 @@ everyone.now.clientReady = function () {
 // --- Game server communication. ---
 // All players are reported ready on a room. Start it!
 var startGame = function (room) {
+  // can a game be started from this room?
+  if (!room.canStartGame) {
+    return;
+  }
   // check if all clients are still ready
   if (!room.allReady()) {
     return;
