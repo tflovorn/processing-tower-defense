@@ -1,6 +1,7 @@
 var express = require('express')
   , nowjs = require('now')
   , io = require('socket.io')
+  , ioClient = require('socket.io-client')
   , fs = require('fs')
   , ams = require('ams')
   , clientDir = __dirname + '/client'
@@ -10,15 +11,18 @@ var express = require('express')
   , lobbyMessagePort = 3001
   , clients = []
   , games = []
-  , tokenToGameId = {};
+  , tokenToGameId = {}
+  , dbFrontEnd = "http://localhost:3003";
 
 // --- Object definitions. ---
+
 // Client object constructor.
-var Client = function (id, name) {
+var Client = function (id, authToken, name) {
   var client = new Object();
   client.id = id;
   client.name = name;
-  client.game = null;
+  client.authToken = authToken;
+  client.game = null; // client's game id
 
   return client;
 }
@@ -29,9 +33,9 @@ var Game = function (id, token) {
   game.id = id;
   game.token = token;
   game.clients = [];
+  game.state = null;
 
   // Get names of all clients in the game.
-  // stub
   game.clientNames = function () {
     var names = [];
     for (var i = 0; i < game.clients.length; i++) {
@@ -42,7 +46,7 @@ var Game = function (id, token) {
 
   // Return information client needs to render the game.
   game.info = function () {
-    return [game.clientNames()];
+    return {id: game.id, token: game.token, clients: game.clientNames()};
   };
 
   // Add a client to this game.
@@ -69,10 +73,9 @@ var Game = function (id, token) {
 
   return game;
 }
-games[0] = Game(0, 0);
-tokenToGameId[0] = 0;
 
 // --- Start the server. ---
+
 // Use ams to build public filesystem for game.
 var buildGameStatic = function () {
   // client script
@@ -103,34 +106,38 @@ app.listen(gamePort);
 var everyone = nowjs.initialize(app);
 
 // --- Game to client communication ---
+
 // Client wants to enter the game associated with the given token.
-// Also comes with an auth object; TODO: check this with login server.
-everyone.now.register = function (token, auth, name) {
+// Client also comes with an auth token - check if this is OK.
+everyone.now.register = function (gameToken, authToken) {
+  var self = this;
   // Check if auth object is ok
+  checkUserAuth(authToken, function (response) {
+    if (!response["ok"]) {
+      return;
+    }
+    // authorized; let client into the game
+    var client = Client(self.user.clientId, authToken, response["username"])
+    clients[self.user.clientId] = client;
+    var game = connectToGame(client, gameToken);
+    // Send client back the data it needs to render the game.
+    if (game !== null && game !== undefined) {
+      self.now.receiveGameInfo(game.info());
+    }
+  });
+};
 
-  // authorized; let client into the game
-  // "this" refers to the client's namespace in this scope
-  var client = Client(this.user.clientId, name);
-  clients[this.user.clientId] = client;
-  var game = connectToGame(client, token);
-  // Send client back the data it needs to render the game.
-  this.now.recieveGameInfo(game.info());
-}
-
-// client leaves
+// Client has left.
 nowjs.on('disconnect', function() {
-  // same as before, "this" refers to the client's namespace in this scope
   disconnectFromGame(this.user.clientId);
   nowjs.getGroup(this.now.game).removeUser(this.user.clientId);
 });
 
 // Connect the client with given id to the game with given token.
-// stubby
 var connectToGame = function (client, token) {
   var gameId = tokenToGameId[token];
   if (gameId === undefined || isNaN(gameId)) {
-    // default again
-    gameId = 0;
+    return null;
   }
   games[gameId].join(client);
   return games[gameId];
@@ -151,8 +158,35 @@ io.sockets.on('connection', function (socket) {
   socket.on('start game', function (token) {
     console.log("got token " + token);
     // set up game
-
+    var id = games.length;
+    var game = Game(id, token);
+    games[id] = game;
+    tokenToGameId[token] = id;
     // done with setup
     socket.emit('game ready');
   });
 });
+
+// --- Database server communication ---
+
+// Send the given (message, data) pair to the DB frontend.
+// When a response is recieved, call the given callback.
+// TODO: may need to hold on to socket to prevent it from being gc'd.
+var sendDBMessage = function (message, data, callback) {
+  // connect to database frontend
+  var socket = ioClient.connect(dbFrontEnd);
+  // prepare to recieve response
+  var responded = false;
+  socket.on("response", function (response) {
+    if (!responded) {
+      callback(response);
+      responded = true;
+    }
+  });
+  // send message
+  socket.emit(message, data);
+}
+
+var checkUserAuth = function (authToken, callback) {
+  sendDBMessage("auth user token", authToken, callback);
+};

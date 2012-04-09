@@ -259,10 +259,14 @@ var startGame = function (room) {
   // this socket goes out of scope?
   // If this socket will get garbage collected, we need to store it
   // (in a global list of open game server sockets?)
+  var thisReady = false;
   socket.on('game ready', function () {
-    console.log("got game ready on token " + token);
-    // tell clients wating on this game to start
-    nowjs.getGroup(room.id).now.startGame(token, server["game"]);
+    if (!thisReady) {
+      console.log("got game ready on token " + token);
+      // tell clients wating on this game to start
+      nowjs.getGroup(room.id).now.startGame(token, server["game"]);
+      thisReady = true;
+    }
   });
 
   // tell game server to start running a game with given token
