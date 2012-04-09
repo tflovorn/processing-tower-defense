@@ -43,7 +43,7 @@ var writeText = function (text) {
   chat.value += text + "\n";
 };
 
-// --- Client interaction ---
+// --- Server interaction ---
 
 // Enter the lobby page.
 var startLobby = function () {
@@ -77,6 +77,14 @@ var sendChat = function () {
 var newRoom = function () {
   now.ready(function () {
     now.newRoom();
+  });
+};
+
+// Join an existing room.
+var joinRoom = function () {
+  var selectedRoom = document.getElementById('roomList').selectedIndex;
+  now.ready(function () {
+    now.joinRoom(selectedRoom);
   });
 };
 

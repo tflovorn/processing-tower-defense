@@ -174,11 +174,13 @@ everyone.now.register = function (authToken) {
   });
 };
 
+// Put client in the entry room.
 var enterLobby = function (client) {
   rooms[entryRoomId].join(client);
   return rooms[entryRoomId];
 };
 
+// Return a list containing the name of each room.
 var roomNames = function () {
   var names = [];
   for (var i = 0; i < rooms.length; i++) {
@@ -187,17 +189,7 @@ var roomNames = function () {
   return names;
 };
 
-// TODO
-everyone.now.joinRoom = function (roomId) {
-
-};
-
-everyone.now.sendChat = function (chatLine) {
-  var client = clients[this.user.clientId];
-  var room = rooms[client.room];
-  room.sendChat(client.name, chatLine);
-};
-
+// Client is creating a new room and joining it.
 everyone.now.newRoom = function () {
   var client = clients[this.user.clientId];
   client.leaveCurrentRoom();
@@ -207,6 +199,23 @@ everyone.now.newRoom = function () {
   this.now.receiveRoomInfo(room.info(), roomNames());
 };
 
+// Client is switching rooms.
+everyone.now.joinRoom = function (roomId) {
+  var client = clients[this.user.clientId];
+  client.leaveCurrentRoom();
+  var room = rooms[roomId];
+  room.join(client);
+  this.now.receiveRoomInfo(room.info(), roomNames());
+};
+
+// Client is sending a chat line.
+everyone.now.sendChat = function (chatLine) {
+  var client = clients[this.user.clientId];
+  var room = rooms[client.room];
+  room.sendChat(client.name, chatLine);
+};
+
+// Client is ready to start game.
 everyone.now.clientReady = function () {
   client = clients[this.user.clientId];
   if (client === null || client === undefined) {
