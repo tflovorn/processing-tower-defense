@@ -1,3 +1,5 @@
+// --- Utility functions ---
+
 // Read the cookie with given name.
 // Code pulled directly from http://www.quirksmode.org/js/cookies.html
 var readCookie = function (name) {
@@ -9,19 +11,6 @@ var readCookie = function (name) {
     if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
   }
   return null;
-};
-
-// Enter the lobby page.
-var startLobby = function () {
-  var auth = readCookie("authToken");
-  now.ready(function() {
-    now.register(auth);
-  }); 
-};
-
-// Registration is done; get room info.
-now.receiveRoomInfo = function (myRoomInfo, roomNames) {
-  fillRoomList(roomNames);
 };
 
 // Fill the roomList with given room names.
@@ -46,6 +35,29 @@ var fillRoomList = function (roomNames) {
       roomList.add(room); // IE only
     }
   }
+};
+
+// Write a line to the chatDisplay textarea.
+var writeText = function (text) {
+  var chat = document.getElementById('chatDisplay');
+  chat.value += text + "\n";
+};
+
+// --- Client interaction ---
+
+// Enter the lobby page.
+var startLobby = function () {
+  var auth = readCookie("authToken");
+  now.ready(function() {
+    now.register(auth);
+  }); 
+};
+
+// Joined a new room: accept room info.
+// (end up here after registration, room creation, or basic room join)
+now.receiveRoomInfo = function (myRoomInfo, roomNames) {
+  fillRoomList(roomNames);
+  writeText("--- Joined room: " + myRoomInfo["name"]);
 };
 
 // Create a new room for this client.

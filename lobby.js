@@ -69,7 +69,8 @@ var Room = function(id, name, canStartGame) {
 
   // Information client needs to render the room.
   room.info = function () {
-    return [room.name, room.clientNames(), room.chat];
+    return {"name": room.name, "clients": room.clientNames()
+          , "chat": room.chat};
   };
 
   // Add a client to this room.
