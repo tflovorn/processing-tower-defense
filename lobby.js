@@ -54,7 +54,6 @@ var Room = function(id, name, canStartGame) {
   room.name = name;
   room.canStartGame = canStartGame; // false for entry room
   room.clients = [];  // list of clientIds present in this room
-  room.chat = [];
 
   // Get names of all clients in the room.
   room.clientNames = function () {
@@ -69,8 +68,7 @@ var Room = function(id, name, canStartGame) {
 
   // Information client needs to render the room.
   room.info = function () {
-    return {"name": room.name, "clients": room.clientNames()
-          , "chat": room.chat};
+    return {"name": room.name, "clients": room.clientNames()};
   };
 
   // Add a client to this room.
@@ -103,6 +101,11 @@ var Room = function(id, name, canStartGame) {
       }
     }
     return true;
+  };
+
+  // Send a chat message to all users in the room.
+  room.sendChat = function (name, chatLine) {
+    nowjs.getGroup(room.id).now.receiveChat(name, chatLine);
   };
 
   return room;
@@ -189,8 +192,14 @@ everyone.now.joinRoom = function (roomId) {
 
 };
 
+everyone.now.sendChat = function (chatLine) {
+  var client = clients[this.user.clientId];
+  var room = rooms[client.room];
+  room.sendChat(client.name, chatLine);
+};
+
 everyone.now.newRoom = function () {
-  client = clients[this.user.clientId];
+  var client = clients[this.user.clientId];
   client.leaveCurrentRoom();
   var room = Room(rooms.length, client.name + "'s room", true);
   room.join(client);
@@ -265,8 +274,12 @@ var sendDBMessage = function (message, data, callback) {
   // connect to database frontend
   var socket = io.connect(dbFrontEnd);
   // prepare to recieve response
+  var responded = false;
   socket.on("response", function (response) {
-    callback(response);
+    if (!responded) {
+      callback(response);
+      responded = true;
+    }
   });
   // send message
   socket.emit(message, data);

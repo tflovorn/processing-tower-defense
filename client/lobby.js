@@ -60,6 +60,19 @@ now.receiveRoomInfo = function (myRoomInfo, roomNames) {
   writeText("--- Joined room: " + myRoomInfo["name"]);
 };
 
+// Recieve a chat message.
+now.receiveChat = function (user, chatLine) {
+  writeText(user + ": " + chatLine);
+};
+
+// Send a chat message.
+var sendChat = function () {
+  var chatLine = document.getElementById('chatWrite').value;
+  now.ready(function () {
+    now.sendChat(chatLine);
+  });
+};
+
 // Create a new room for this client.
 var newRoom = function () {
   now.ready(function () {
