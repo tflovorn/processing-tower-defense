@@ -14,6 +14,14 @@ var express = require('express')
   , tokenToGameId = {}
   , dbFrontEnd = "http://localhost:3003";
 
+// Array Remove - By John Resig (MIT Licensed)
+// http://ejohn.org/blog/javascript-array-remove/
+Array.prototype.remove = function(from, to) {
+  var rest = this.slice((to || from) + 1 || this.length);
+  this.length = from < 0 ? this.length + from : from;
+  return this.push.apply(this, rest);
+};
+
 // --- Object definitions. ---
 
 // Client object constructor.
@@ -66,9 +74,14 @@ var Game = function (id, token) {
   };
 
   // Remove a client from this game.
-  // stub
-  game.leave = function (client) {
-    
+  game.leave = function (leavingClient) {
+    for (var i = 0; i < game.clients.length; i++) {
+      var client = clients[game.clients[i]]
+      if (client.id === leavingClient.id) {
+        game.clients.remove(i);
+        nowjs.getGroup(game.id).removeUser(client.id);
+      }
+    }
   };
 
   return game;
@@ -130,7 +143,6 @@ everyone.now.register = function (gameToken, authToken) {
 // Client has left.
 nowjs.on('disconnect', function() {
   disconnectFromGame(this.user.clientId);
-  nowjs.getGroup(this.now.game).removeUser(this.user.clientId);
 });
 
 // Connect the client with given id to the game with given token.
@@ -144,9 +156,11 @@ var connectToGame = function (client, token) {
 };
 
 // Remove the client with given id from its game.
-// stub
 var disconnectFromGame = function (clientId) {
-  
+  var client = clients[clientId];
+  if (client && client.game !== null) {
+    games[client.game].leave(client);
+  }
 };
 
 // --- Lobby to game communication ---
@@ -157,11 +171,22 @@ io = io.listen(lobbyMessagePort);
 io.sockets.on('connection', function (socket) {
   socket.on('start game', function (token) {
     console.log("got token " + token);
-    // set up game
-    var id = games.length;
-    var game = Game(id, token);
-    games[id] = game;
-    tokenToGameId[token] = id;
+    // is there already a game at this token?
+    var newGame = true;
+    var maybeId = tokenToGameId[token];
+    if (maybeId !== undefined) {
+      var maybeGame = games[maybeId];
+      if (maybeGame && maybeGame.token === token) {
+        newGame = false;
+      }
+    }
+    // set up game if necessary
+    if (newGame) {
+      var id = games.length;
+      var game = Game(id, token);
+      games[id] = game;
+      tokenToGameId[token] = id;
+    }
     // done with setup
     socket.emit('game ready');
   });
