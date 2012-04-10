@@ -46,8 +46,10 @@ io.sockets.on('connection', function (socket) {
   // the socket.emit("reponse", ...) to isolate IO delay.
 
   // Check if user login info is OK. Return a unique token for this user.
-  socket.on("auth user login", function (login, pass) {
+  socket.on("auth user login", function (loginData) {
     // TODO: check user login info
+    var login = loginData["login"];
+    var pass = loginData["pass"];
     var ok = true;
     var authToken = "A";
     // user ok
