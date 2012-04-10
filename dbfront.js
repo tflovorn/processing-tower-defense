@@ -66,8 +66,10 @@ io.sockets.on('connection', function (socket) {
   // Report the outcome of a game. Increment winner's win-count by 1; increment
   // loser's lose-count by 1.
   // TODO: (winner, loser) could be names or auth tokens. Decide which.
-  socket.on("game outcome", function (winner, loser) {
+  socket.on("game outcome", function (stats) {
     var ok = true;
+    var winner = stats["winner"];
+    var loser = stats["loser"];
 
     socket.emit("response", {ok: ok});
   });

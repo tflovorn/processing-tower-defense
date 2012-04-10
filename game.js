@@ -215,3 +215,7 @@ var sendDBMessage = function (message, data, callback) {
 var checkUserAuth = function (authToken, callback) {
   sendDBMessage("auth user token", authToken, callback);
 };
+
+var reportGame = function (winner, loser, callback) {
+  sendDBMessage("game outcome", {winner: winner, loser: loser}, callback);
+};
