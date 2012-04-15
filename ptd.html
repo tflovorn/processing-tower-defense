@@ -76,7 +76,6 @@
   </div>
 
   <div id="middle">
-    <canvas id='tower_defense' width="600" height="400"></canvas>
 
     <div id="side">
       <div id="controls">
@@ -121,15 +120,17 @@
           <tr><td> Value: </td><td id="creep_value"></td></tr>
         </table>
       </div>
+
       <div class='error message_area'></div>
       <div class='message message_area'></div>
     </div>
+    <canvas id='tower_defense' width="1300" height="400"></canvas>
   </div>
 
   <div id="bottom_controls">
     <button id='pause_button' class='mode_button' onclick="pause();">Pause</button>
     <button id='reset_button' onclick="reset_game();">Reset Game</button>
-    <button onclick="spawn_wave();">Spawn Next <span class='hotkey'>W</span>ave</button>
+    <button onclick="spawn_wave(SETS[0]);">Spawn Next <span class='hotkey'>W</span>ave</button>
 <!--     <button id='mute_button' onclick="mute();">Mute</button> -->
     <button id='help_button' onclick="toggle_help();"><span class='hotkey'>H</span>elp</button>
     <button id='logging_button' onclick='toggle_logging();' class='active_mode'>Stop <span class='hotkey'>D</span>ebugging</button>

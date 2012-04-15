@@ -57,7 +57,8 @@ var grid_to_pixel = function(SET,gx,gy) {
     gy = gx.gy;
     gx = gx.gx;
   }
-  return {x:gx*SET.pixels_per_square, y:gy*SET.pixels_per_square};
+  return {x:SET.x_offset + gx*SET.pixels_per_square
+        , y:SET.y_offset + gy*SET.pixels_per_square};
 };
 
 // return grid coordinates of square containing pixel
@@ -67,8 +68,8 @@ var pixel_to_grid = function(SET,x,y) {
     y = x.y;
     x = x.x;
   }
-  var grid_x = Math.floor(x / SET.pixels_per_square);
-  var grid_y = Math.floor(y / SET.pixels_per_square);
+  var grid_x = Math.floor((x - SET.x_offset) / SET.pixels_per_square);
+  var grid_y = Math.floor((y - SET.y_offset) / SET.pixels_per_square);
   return {gx:grid_x, gy:grid_y};
 };
 
@@ -259,6 +260,6 @@ var move_towards = function(SET,obj, x,y,tx,ty,speed) {
   var path = calc_path(x,y,tx,ty,speed);
   obj.x += path.x;
   obj.y += path.y;
-  obj.x = Math.max(0, Math.min(SET.width , obj.x));
-  obj.y = Math.max(0, Math.min(SET.height, obj.y));
+  obj.x = Math.max(0, Math.min(SET.x_offset + SET.width , obj.x));
+  obj.y = Math.max(0, Math.min(SET.y_offset + SET.height, obj.y));
 }

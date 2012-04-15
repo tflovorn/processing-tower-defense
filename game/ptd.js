@@ -64,10 +64,12 @@ var update_groups = function(groups) {
   Configuration & settings.
  */
 
-var default_set = function() {
+var default_set = function(x_offset, y_offset) {
   var set = {};
 
   // constants
+  set.x_offset = x_offset;
+  set.y_offset = y_offset;
   set.pixels_per_square = 25;
   set.half_pixels_per_square = (1.0 * set.pixels_per_square) / 2;
   set.height = 450;
@@ -258,12 +260,14 @@ var Grid = function(SET) {
   grid.draw = function() {
     stroke(SET.grid_color);
     var p = SET.pixels_per_square;
+    var xo = SET.x_offset;
+    var yo = SET.y_offset;
     var w = SET.width;
     var h = SET.height;
-    for (i = 0; i<w; i+=p) {
+    for (i = xo; i<w+xo; i+=p) {
       line(i, 0, i, h);
     }
-    for (i = 0; i<h; i+=p) {
+    for (i = yo; i<h+yo; i+=p) {
       line(0,i,w,i);
     }
   };
@@ -357,7 +361,7 @@ var pause_resume = function(SET) {
 
 var game_lost = function(SET) {
   unselect(SET);
-  attempt_to_enter_ui_mode(new GameOverMode(SET));
+  attempt_to_enter_ui_mode(SET, new GameOverMode(SET));
 }
 
 /*
@@ -372,17 +376,22 @@ var generate_map = function(SET) {
 }
 
 var reset_game = function() {
-  SETS[0] = default_set();
-  //SETS[1] = default_set();
+  SETS[0] = default_set(0, 0);
+  SETS[1] = default_set(700, 0);
   WIDGETS = fetch_ui_widgets();
   WIDGETS.bomb_cost.innerHTML = SETS[0].bomb_cost;
   SettingUpdater(SETS[0]);
+  SettingUpdater(SETS[1]);
   UIUpdater(SETS[0]);
+  //UIUpdater(SETS[1]); // need widgets for second player
   //Grid();
   generate_map(SETS[0]);
+  generate_map(SETS[1]);
   setTowerModePrototypes(SETS[0]);
   SETS[0].creep_wave_controller = CreepWaveController(SETS[0]);
+  SETS[1].creep_wave_controller = CreepWaveController(SETS[1]);
   reset_pathfinding(SETS[0]);
+  reset_pathfinding(SETS[1]);
   $('').trigger("game_over",false);
 };
 
@@ -394,7 +403,7 @@ var on_mouse_moved = function() {
   var SET = SETS[0];
   if (SET.state && SET.state.draw) {
     var pos = mouse_pos();
-    SET.state.draw(pos.x,pos.y);
+    SET.state.draw(pos.x + SET.x_offset, pos.y + SET.y_offset);
   }
 };
 
@@ -406,6 +415,8 @@ var UI_MODES_FROM_CLICK = [TowerSelectMode, CreepSelectMode];
 var on_mouse_press = function() {
   var SET = SETS[0];
   var pos = mouse_pos();
+  pos.x += SET.x_offset;
+  pos.y += SET.y_offset;
   if (SET.state) {
     if (SET.state.is_legal(pos.x,pos.y)) {
       SET.state.action(pos.x,pos.y);
@@ -452,7 +463,8 @@ var start_tower_defense = function() {
     $('#pause_button').html("Pause");
     set_canvas("tower_defense");
     reset_game();
-    size(SETS[0].width, SETS[0].height);
+    size(SETS[1].x_offset + SETS[1].width
+       , SETS[1].y_offset + SETS[1].height);
     frameRate(SETS[0].framerate);
     mouseMoved(on_mouse_moved);
     mousePressed(on_mouse_press);
@@ -465,7 +477,7 @@ var start_tower_defense = function() {
     }
     background(SETS[0].bg_color);
     update_groups(SETS[0].rendering_groups);
-    //update_groups(SETS[1].rendering_groups);
+    update_groups(SETS[1].rendering_groups);
   }
   setup();
 }
