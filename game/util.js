@@ -52,7 +52,7 @@ var dist = function(x1,y1,x2,y2) {
 
 // return pixel coordinates of top left corner
 // of square at grid coordinates (gx,gy)
-var grid_to_pixel = function(gx,gy) {
+var grid_to_pixel = function(SET,gx,gy) {
   if (gy == undefined) {
     gy = gx.gy;
     gx = gx.gx;
@@ -62,7 +62,7 @@ var grid_to_pixel = function(gx,gy) {
 
 // return grid coordinates of square containing pixel
 // coordinate (x,y)
-var pixel_to_grid = function(x,y) {
+var pixel_to_grid = function(SET,x,y) {
   if (y == undefined) {
     y = x.y;
     x = x.x;
@@ -74,12 +74,12 @@ var pixel_to_grid = function(x,y) {
 
 // return pixel coordinates for the center of
 // square at grid coordinates (gx,gy)
-var center_of_square = function(gx,gy) {
+var center_of_square = function(SET,gx,gy) {
   if (gy == undefined) {
     gy = gx.gy;
     gx = gx.gx;
   }
-  var coords = grid_to_pixel(gx,gy);
+  var coords = grid_to_pixel(SET,gx,gy);
   return {x:coords.x + SET.half_pixels_per_square,
       y:coords.y + SET.half_pixels_per_square};
 };
@@ -89,14 +89,14 @@ var center_of_square = function(gx,gy) {
  */
 
 // draw a square filling square (gx,gy)
-var draw_square_in_grid = function(gx,gy) {
-  var pos = grid_to_pixel(gx,gy);
+var draw_square_in_grid = function(SET,gx,gy) {
+  var pos = grid_to_pixel(SET,gx,gy);
   rect(pos.x,pos.y,SET.pixels_per_square,SET.pixels_per_square);
 }
 
 // draw a circle filling (gx,gy)
-var draw_circle_in_grid = function(gx,gy) {
-  var pos = grid_to_pixel(gx,gy);
+var draw_circle_in_grid = function(SET,gx,gy) {
+  var pos = grid_to_pixel(SET,gx,gy);
   var h = SET.half_pixels_per_square;
   var l = SET.pixels_per_square;
   ellipse(pos.x+h,pos.y+h,l-1,l-1);
@@ -106,15 +106,15 @@ var draw_circle_in_grid = function(gx,gy) {
   Various game utility functions.
  */
   
-var can_build_here = function(gx,gy) {
-  if ( get_tower_at(gx,gy) != false) return false;
+var can_build_here = function(SET,gx,gy) {
+  if ( get_tower_at(SET,gx,gy) != false) return false;
   if ((gx == SET.entrance.gx) && (gy == SET.entrance.gy)) return false;
   if ((gx == SET.exit.gx) && (gy == SET.exit.gy)) return false;
   
   return true;
 };
 
-var get_tower_at = function(gx,gy) {
+var get_tower_at = function(SET,gx,gy) {
   var cached = SET.grid_cache_at(gx,gy);
   if (cached.tower) return cached.tower;
 
@@ -129,7 +129,7 @@ var get_tower_at = function(gx,gy) {
   return false;
 };
 
-var get_terrain_at = function(gx,gy) {
+var get_terrain_at = function(SET,gx,gy) {
   var cached = SET.grid_cache_at(gx,gy);
   if (cached.terrain) return cached.terrain;
 
@@ -144,7 +144,7 @@ var get_terrain_at = function(gx,gy) {
   return;
 }
 
-var get_creep_nearest = function(x,y,sensitivity) {
+var get_creep_nearest = function(SET,x,y,sensitivity) {
   if (!sensitivity) sensitivity = 10;
   var creeps = SET.rendering_groups[SET.creep_render_level];
   var len = creeps.length;
@@ -255,7 +255,7 @@ var insert_sorted = function(array, value, sortKey) {
 //moves the given object towards the target at speed
 //also ensures that the given object doesn't go outside of the bounds
 //of the map
-var move_towards = function(obj, x,y,tx,ty,speed) {
+var move_towards = function(SET,obj, x,y,tx,ty,speed) {
   var path = calc_path(x,y,tx,ty,speed);
   obj.x += path.x;
   obj.y += path.y;

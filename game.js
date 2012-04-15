@@ -31,6 +31,7 @@ var Client = function (id, authToken, name) {
   client.name = name;
   client.authToken = authToken;
   client.game = null; // client's game id
+  client.SET = null;  // client's game state
 
   return client;
 }
@@ -41,7 +42,6 @@ var Game = function (id, token) {
   game.id = id;
   game.token = token;
   game.clients = [];
-  game.state = null;
 
   // Get names of all clients in the game.
   game.clientNames = function () {

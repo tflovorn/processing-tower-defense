@@ -1,4 +1,4 @@
-var CircleZone = function(x,y,r) {
+var CircleZone = function(SET,x,y,r) {
   var cz = new Object();
   Object.extend(cz, InertDrawable);
   var d = 2*r;
@@ -11,26 +11,26 @@ var CircleZone = function(x,y,r) {
   return cz
 }
 
-var KillZone = function(x,y,r) {
-  var kz = new CircleZone(x,y,r);
-  assign_to_depth(kz, SET.killzone_render_level);
+var KillZone = function(SET,x,y,r) {
+  var kz = new CircleZone(SET,x,y,r);
+  assign_to_depth(SET, kz, SET.killzone_render_level);
   return kz;
 };
 
-var BuildRadius = function(x,y,r) {
-  var br = KillZone(x,y,r);
-  assign_to_depth(br, SET.build_zone_render_level);
+var BuildRadius = function(SET,x,y,r) {
+  var br = KillZone(SET,x,y,r);
+  assign_to_depth(SET, br, SET.build_zone_render_level);
   return br;
 };
 
-var MissileRadius = function(x,y,r) {
-  var mr = KillZone(x,y,r);
+var MissileRadius = function(SET,x,y,r) {
+  var mr = KillZone(SET,x,y,r);
   mr.color = color(0, 40,40,0.5);
   return mr;
 }
 
-var Tower = function(settings) {
-  var tower = GridSquare(settings.gx,settings.gy,settings.color);
+var Tower = function(SET,settings) {
+  var tower = GridSquare(SET,settings.gx,settings.gy,settings.color);
   Object.extend(tower, settings);
   // note, range is in terms of grid squares
   // and is calculated from center of tower
@@ -39,7 +39,7 @@ var Tower = function(settings) {
     tower.prange = range * SET.pixels_per_square;
   };
   tower.account_for_terrain = function() {
-    var terrain = get_terrain_at(this.gx,this.gy);
+    var terrain = get_terrain_at(SET,this.gx,this.gy);
     this.damage = this.damage * terrain.tower_damage_modifier;
     this.set_range(this.range * terrain.tower_range_modifier);
     this.reload_rate = this.reload_rate * terrain.tower_frequency_modifier;
@@ -47,7 +47,7 @@ var Tower = function(settings) {
   tower.set_range(3.5);
   tower.damage = 5.0;
   tower.attack = function(creep) {};
-  var mid = center_of_square(tower.gx,tower.gy);
+  var mid = center_of_square(SET,tower.gx,tower.gy);
   tower.x_mid = mid.x;
   tower.y_mid = mid.y;
   tower.fired_at = 0;
@@ -110,14 +110,14 @@ var Tower = function(settings) {
   tower.draw = function() {
     noStroke();
     fill(this.color);
-    draw_circle_in_grid(this.gx,this.gy);
+    draw_circle_in_grid(SET,this.gx,this.gy);
   }
-  assign_to_depth(tower, SET.tower_render_level);
+  assign_to_depth(SET, tower, SET.tower_render_level);
   return tower;
 };
 
-var MissileTower = function(gx,gy) {
-  var mt = Tower({gx:gx,gy:gy,color:color(250,150,50)});
+var MissileTower = function(SET,gx,gy) {
+  var mt = Tower(SET, {gx:gx,gy:gy,color:color(250,150,50)});
   mt.type = "Missile Tower";
   mt.damage = 5000;
   mt.upgrade_cost = 100;
@@ -125,7 +125,7 @@ var MissileTower = function(gx,gy) {
   mt.set_range(5.5);
   mt.reload_rate = 2000;
   mt.attack = function(creep) {
-    assign_to_depth(Missile(this,creep),SET.bullet_render_level);
+    assign_to_depth(SET, Missile(SET,this,creep),SET.bullet_render_level);
   }
   mt.upgrade = function() {
     if (SET.gold >= this.upgrade_cost) {
@@ -136,7 +136,7 @@ var MissileTower = function(gx,gy) {
       this.set_range(this.range + 0.5);
 
       unselect();
-      SET.state = new TowerSelectMode();
+      SET.state = new TowerSelectMode(SET);
       SET.state.set_up(this.x_mid,this.y_mid);
     }
     else error("You don't have enough gold to upgrade, you need " + (this.upgrade_cost - SET.gold) + " more.");
@@ -145,11 +145,11 @@ var MissileTower = function(gx,gy) {
   return mt;
 }
 
-var LaserTower = function(gx,gy) {
-  var lt = Tower({gx:gx,gy:gy,color:color(90,150,50)});
+var LaserTower = function(SET,gx,gy) {
+  var lt = Tower(SET,{gx:gx,gy:gy,color:color(90,150,50)});
   lt.type = "Laser Tower";
   lt.attack = function(creep) {
-    assign_to_depth(Laser(this,creep),SET.bullet_render_level);
+    assign_to_depth(SET,Laser(SET,this,creep),SET.bullet_render_level);
   };
   lt.upgrade_cost = 25;
   lt.sale_value = 13;
@@ -163,7 +163,7 @@ var LaserTower = function(gx,gy) {
       this.reload_rate = this.reload_rate - 10;
 
       unselect();
-      SET.state = new TowerSelectMode();
+      SET.state = new TowerSelectMode(SET);
       SET.state.set_up(this.x_mid,this.y_mid);
     }
     else error("You don't have enough gold to upgrade, you need " + (this.upgrade_cost - SET.gold) + " more.");
@@ -175,11 +175,11 @@ var LaserTower = function(gx,gy) {
   return lt;
 };
 
-var CannonTower = function(gx,gy) {
-  var lt = Tower({gx:gx,gy:gy,color:color(100,120,140)});
+var CannonTower = function(SET,gx,gy) {
+  var lt = Tower(SET,{gx:gx,gy:gy,color:color(100,120,140)});
   lt.type = "Cannon Tower";
   lt.attack = function(creep) {
-    assign_to_depth(CannonBall(this,{x:creep.x, y:creep.y, hp:1}),SET.bullet_render_level);
+    assign_to_depth(SET,CannonBall(SET,this,{x:creep.x, y:creep.y, hp:1}),SET.bullet_render_level);
   };
   lt.upgrade_cost = 75;
   lt.sale_value = 50;
@@ -193,7 +193,7 @@ var CannonTower = function(gx,gy) {
       this.reload_rate = this.reload_rate - 10;
 
       unselect();
-      SET.state = new TowerSelectMode();
+      SET.state = new TowerSelectMode(SET);
       SET.state.set_up(this.x_mid,this.y_mid);
     }
     else error("You don't have enough gold to upgrade, you need " + (this.upgrade_cost - SET.gold) + " more.");
@@ -205,8 +205,8 @@ var CannonTower = function(gx,gy) {
   return lt;
 };
 
-var GatlingTower = function(gx,gy) {
-  var gt = Tower({gx:gx,gy:gy,color:color(250,250,50)});
+var GatlingTower = function(SET,gx,gy) {
+  var gt = Tower(SET,{gx:gx,gy:gy,color:color(250,250,50)});
   gt.type = "Gatling Tower";
   gt.damage = 50;
   gt.upgrade_cost = 25;
@@ -233,7 +233,7 @@ var GatlingTower = function(gx,gy) {
   };
 
   gt.attack = function(creep) {
-    assign_to_depth(Bullet(this,creep),SET.bullet_render_level);
+    assign_to_depth(SET,Bullet(SET,this,creep),SET.bullet_render_level);
     gt.shots_left_in_volley--;
     gt.fire_next_at = SET.now + gt.reload_rate;
     if (gt.shots_left_in_volley < 1) {
@@ -251,7 +251,7 @@ var GatlingTower = function(gx,gy) {
       this.set_range(this.range + 0.5);
       this.reload_rate = Math.floor(this.reload_rate * 0.95);
       unselect();
-      SET.state = new TowerSelectMode();
+      SET.state = new TowerSelectMode(SET);
       SET.state.set_up(this.x_mid,this.y_mid);
     }
     else error("You don't have enough gold to upgrade, you need " + (this.upgrade_cost - SET.gold) + " more.");
@@ -260,7 +260,7 @@ var GatlingTower = function(gx,gy) {
   return gt;
 }
 
-var Weapon = function(tower,target) {
+var Weapon = function(SET,tower,target) {
   var w = new Object();
   w.x = tower.x_mid;
   w.y = tower.y_mid;
@@ -282,7 +282,7 @@ var Weapon = function(tower,target) {
       var elapsed = 1.0 * (SET.now - this.last);
       var speed = this.speed * (elapsed/1000);
       this.last = SET.now;
-      move_towards(this, this.x,this.y,target.x,target.y,this.speed);
+      move_towards(SET, this, this.x,this.y,target.x,target.y,this.speed);
     }
   }
   w.is_dead = function() {
@@ -292,9 +292,9 @@ var Weapon = function(tower,target) {
   return w;
 };
 
-var Bullet = function(tower, target) {
+var Bullet = function(SET, tower, target) {
   var b = new Object();
-  Object.extend(b, Weapon(tower,target));
+  Object.extend(b, Weapon(SET,tower,target));
   b.size = 5;
   b.color = color(255,255,255);
   b.fill_color = color(100,255,0);
@@ -309,9 +309,9 @@ var Bullet = function(tower, target) {
   return b;
 }
 
-var CannonBall = function(tower, target) {
+var CannonBall = function(SET, tower, target) {
   var c = new Object();
-  Object.extend(c, Weapon(tower,target));
+  Object.extend(c, Weapon(SET,tower,target));
   c.midpoint = {x:Math.floor((c.x + target.x)/2.0), y:Math.floor((c.y + target.y) / 2.0)};
   c.middist = dist(c.x, c.y, c.midpoint.x, c.midpoint.y);
   c.min_size = 8
@@ -347,9 +347,9 @@ var CannonBall = function(tower, target) {
   return c;
 };
 
-var Missile = function(tower,target) {
+var Missile = function(SET,tower,target) {
   var m = new Object();
-  Object.extend(m, Weapon(tower,target));
+  Object.extend(m, Weapon(SET,tower,target));
   m.size = 10;
   m.color = color(255,0,0);
   m.fill_color = color(250,50,50);
@@ -358,7 +358,7 @@ var Missile = function(tower,target) {
   m.proximity = 20;
   m.is_dead = function() {
     if (!this.target || this.target.hp <= 0) {
-      this.target = get_creep_nearest(this.x,this.y,100);
+      this.target = get_creep_nearest(SET,this.x,this.y,100);
       //log("new target: " + pp(this.target));
     }
     if (!this.target) return true;
@@ -382,9 +382,9 @@ var Missile = function(tower,target) {
   return m;
 };
 
-var Laser = function(tower,target) {
+var Laser = function(SET,tower,target) {
   var l = new Object();
-  Object.extend(l, Weapon(tower,target));
+  Object.extend(l, Weapon(SET,tower,target));
   l.tail = 20; // length of laser's graphic
   l.color = color(0,0,255);
   l.speed = 10;

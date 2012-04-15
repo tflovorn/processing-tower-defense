@@ -1,4 +1,4 @@
-var CreepWaveController = function() {
+var CreepWaveController = function(SET) {
   var cwc = new Object();
   Object.extend(cwc, InertDrawable);
   cwc.delay = 25000;
@@ -30,7 +30,7 @@ var CreepWaveController = function() {
     else if (this.wave % 5 == 0) mixins.push(StrongMixin);
     else if (this.wave % 3 == 0) mixins.push(QuickMixin);
 
-    create_creep_wave_with_mixins(settings, mixins);
+    create_creep_wave_with_mixins(SET, settings, mixins);
 
     this.wave++;
     cwc.last = SET.now;
@@ -40,11 +40,11 @@ var CreepWaveController = function() {
       this.spawn_wave();
     }
   }
-  assign_to_depth(cwc, SET.system_render_level);
+  assign_to_depth(SET, cwc, SET.system_render_level);
   return cwc;
 };
 
-var CreepWave = function(settings) {
+var CreepWave = function(SET, settings) {
   var cw = new Object();
   Object.extend(cw, InertDrawable);
   cw.remaining = 20;
@@ -52,7 +52,7 @@ var CreepWave = function(settings) {
   cw.last = 0;
   cw.interval = 1000;
   Object.extend(cw, settings);
-  cw.spawn_creep = function() { Creep(this.wave); };
+  cw.spawn_creep = function() { Creep(SET, this.wave); };
   cw.spawn = function() {
     this.remaining--;
     this.spawn_creep();
@@ -69,17 +69,17 @@ var CreepWave = function(settings) {
       this.spawn();
     }
   }
-  assign_to_depth(cw, SET.system_render_level);
+  assign_to_depth(SET, cw, SET.system_render_level);
   SET.creep_variety = "Normal Creeps";
   return cw;
 };
 
-var create_creep_wave_with_mixins = function(settings, mixins) {
+var create_creep_wave_with_mixins = function(SET, settings, mixins) {
   if (!mixins) mixins = [];
-  var cw = CreepWave(settings);
+  var cw = CreepWave(SET, settings);
   cw.knows_creep_variety = false;
   cw.spawn_creep = function() {
-    var c = Creep(cw.wave);
+    var c = Creep(SET, cw.wave);
     mixins.forEach(function(mixin) { mixin(c); });
     if (cw.knows_creep_variety == false) {
       SET.creep_variety = c.creep_type + "s";

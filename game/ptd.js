@@ -30,7 +30,10 @@ example for others.
 // at layer 4, and so on. This means that something
 // rendered at layer 0 will draw itself ontop of anything
 // rendered before layer 0.
-var assign_to_depth = function(obj,depth) {
+var assign_to_depth = function(SET, obj,depth) {
+  //console.log(SET);
+  //console.log(obj);
+  //console.log(depth);
   var rendering_group = SET.rendering_groups[depth];
   if (rendering_group == undefined) SET.rendering_groups[depth] = [obj];
   else rendering_group.push(obj);
@@ -171,9 +174,12 @@ var default_set = function() {
   set.nukes = 3;
   set.bomb_cost = 50;
 
+  // pathfinding
+  set.known_best_paths = undefined;
+
   return set
 };
-var SET;
+var SETS = [];
 
 var fetch_ui_widgets = function() {
   var w = {};
@@ -221,15 +227,15 @@ Object.extend(InertDrawable, {
 
 // responsible for updating settings in SET
 // at the very beginning of a rendering cycle
-var SettingUpdater = function() {
+var SettingUpdater = function(SET) {
   var su = new Object();
   Object.extend(su, InertDrawable);
   su.update = function() { SET.now = millis(); }
-  assign_to_depth(su, SET.system_render_level);
+  assign_to_depth(SET, su, SET.system_render_level);
   return su;
 };
 
-var UIUpdater = function() {
+var UIUpdater = function(SET) {
   var uiu = new Object();
   Object.extend(uiu, InertDrawable);
 
@@ -241,12 +247,12 @@ var UIUpdater = function() {
     WIDGETS.nukes_left.innerHTML = SET.nukes + " left";
     WIDGETS.till_next_wave.innerHTML = Math.floor(((SET.creep_wave_controller.last + SET.creep_wave_controller.delay) - SET.now) / 1000)
   };
-  assign_to_depth(uiu, SET.system_render_level);
+  assign_to_depth(SET, uiu, SET.system_render_level);
   return uiu;
 }
 
 
-var Grid = function() {
+var Grid = function(SET) {
   var grid = new Object();
   Object.extend(grid, InertDrawable);
   grid.draw = function() {
@@ -261,51 +267,51 @@ var Grid = function() {
       line(0,i,w,i);
     }
   };
-  assign_to_depth(grid, SET.grid_render_level);
+  assign_to_depth(SET, grid, SET.grid_render_level);
   return grid;
 };
 
 
-var GridSquare = function(gx,gy,color) {
+var GridSquare = function(SET,gx,gy,color) {
   var square = new Object();
   Object.extend(square, InertDrawable);
   square.gx = gx;
   square.gy = gy;
-  square.x = grid_to_pixel(gx);
-  square.y = grid_to_pixel(gy);
-  var mid = center_of_square(gx,gy);
+  square.x = grid_to_pixel(SET,gx);
+  square.y = grid_to_pixel(SET,gy);
+  var mid = center_of_square(SET,gx,gy);
   square.x_mid = mid.x;
   square.y_mid = mid.y;
   return square;
 }
 
-var Square = function(gx,gy,color) {
-  var square = GridSquare(gx,gy,color);
+var Square = function(SET,gx,gy,color) {
+  var square = GridSquare(SET,gx,gy,color);
   square.color = color;
   square.draw = function() {
     noStroke();
     fill(this.color);
-    draw_square_in_grid(this.gx,this.gy);
+    draw_square_in_grid(SET,this.gx,this.gy);
   }
-  assign_to_depth(square, SET.square_render_level);
+  assign_to_depth(SET, square, SET.square_render_level);
   return square;
 };
-var ExitSquare = function(gx,gy) {
-  var square = Square(gx,gy,SET.exit_color);
+var ExitSquare = function(SET,gx,gy) {
+  var square = Square(SET,gx,gy,SET.exit_color);
   square.type = "exit";
   square.draw = function() {
     noStroke();
     fill(SET.exit_color);
-    draw_square_in_grid(this.gx,this.gy);
+    draw_square_in_grid(SET,this.gx,this.gy);
     noFill();
     stroke("black");
-    draw_circle_in_grid(this.gx,this.gy);
+    draw_circle_in_grid(SET,this.gx,this.gy);
   }
   return square;
 }
 
 
-var spawn_wave = function() {
+var spawn_wave = function(SET) {
   if (!SET.state ||
       (SET.state.name() != "GameOverMode" &&
        SET.state.name() != "PauseMode")) {
@@ -315,7 +321,7 @@ var spawn_wave = function() {
   }
 }
 
-var nuke_creeps = function() {
+var nuke_creeps = function(SET) {
   if (SET.nukes > 0) {
     var creeps = SET.rendering_groups[SET.creep_render_level];
     creeps.forEach(function(x) {
@@ -329,7 +335,7 @@ var nuke_creeps = function() {
 };
 
 
-var pause_resume = function() {
+var pause_resume = function(SET) {
   if (SET.state) {
     var state_name = SET.state.name();
     if (state_name == "GameOverMode")
@@ -339,42 +345,44 @@ var pause_resume = function() {
     }
     else {
       unselect();
-      SET.state = new PauseMode();
+      SET.state = new PauseMode(SET);
       SET.state.set_up();
     }
   }
   else {
-    SET.state = new PauseMode();
+    SET.state = new PauseMode(SET);
     SET.state.set_up();
   }
 };
 
-var game_lost = function() {
-  unselect();
-  attempt_to_enter_ui_mode(new GameOverMode());
+var game_lost = function(SET) {
+  unselect(SET);
+  attempt_to_enter_ui_mode(new GameOverMode(SET));
 }
 
 /*
   Game level functions. Starting, resetting, etc.
  */
 
-var generate_map = function() {
-  SET.entrance = Square(0, random(SET.gheight-1), SET.entrance_color);
+var generate_map = function(SET) {
+  SET.entrance = Square(SET, 0, random(SET.gheight-1), SET.entrance_color);
   SET.entrance.type = "entrance";
-  SET.exit = ExitSquare(SET.gwidth-1, random(SET.gheight-1));
-  populate_terrains();
+  SET.exit = ExitSquare(SET, SET.gwidth-1, random(SET.gheight-1));
+  populate_terrains(SET);
 }
 
 var reset_game = function() {
-  SET = default_set();
+  SETS[0] = default_set();
+  //SETS[1] = default_set();
   WIDGETS = fetch_ui_widgets();
-  WIDGETS.bomb_cost.innerHTML = SET.bomb_cost;
-  SettingUpdater();
-  UIUpdater();
+  WIDGETS.bomb_cost.innerHTML = SETS[0].bomb_cost;
+  SettingUpdater(SETS[0]);
+  UIUpdater(SETS[0]);
   //Grid();
-  generate_map();
-  SET.creep_wave_controller = CreepWaveController();
-  reset_pathfinding();
+  generate_map(SETS[0]);
+  setTowerModePrototypes(SETS[0]);
+  SETS[0].creep_wave_controller = CreepWaveController(SETS[0]);
+  reset_pathfinding(SETS[0]);
   $('').trigger("game_over",false);
 };
 
@@ -383,6 +391,7 @@ var reset_game = function() {
  */
 
 var on_mouse_moved = function() {
+  var SET = SETS[0];
   if (SET.state && SET.state.draw) {
     var pos = mouse_pos();
     SET.state.draw(pos.x,pos.y);
@@ -395,20 +404,21 @@ var on_mouse_moved = function() {
 var UI_MODES_FROM_CLICK = [TowerSelectMode, CreepSelectMode];
 
 var on_mouse_press = function() {
+  var SET = SETS[0];
   var pos = mouse_pos();
   if (SET.state) {
     if (SET.state.is_legal(pos.x,pos.y)) {
       SET.state.action(pos.x,pos.y);
     }
     if (SET.state.can_leave_mode(pos.x,pos.y)) {
-      unselect();
+      unselect(SET);
     }
   }
   if (!SET.state) {
     var len = UI_MODES_FROM_CLICK.length;
     for (var i=0;i<len;i++) {
       var modeFunc = UI_MODES_FROM_CLICK[i];
-      var mode = new modeFunc();
+      var mode = new modeFunc(SET);
       if (mode.can_enter_mode(pos.x,pos.y)) {
         SET.state = mode;
         SET.state.set_up(pos.x,pos.y);
@@ -423,7 +433,7 @@ var message = function(msg) {
   $('').trigger("message", msg);
 }
 
-var unselect = function() {
+var unselect = function(SET) {
   if (SET.state) SET.state.tear_down();
   SET.state = undefined;
   $('').trigger("no_mode");
@@ -442,19 +452,20 @@ var start_tower_defense = function() {
     $('#pause_button').html("Pause");
     set_canvas("tower_defense");
     reset_game();
-    size(SET.width, SET.height);
-    frameRate(SET.framerate);
+    size(SETS[0].width, SETS[0].height);
+    frameRate(SETS[0].framerate);
     mouseMoved(on_mouse_moved);
     mousePressed(on_mouse_press);
     initProcessing();
   }
   draw = function() {
-    if (SET.state) {
-      var state_name = SET.state.name();
+    if (SETS[0].state) {
+      var state_name = SETS[0].state.name();
       if (state_name == "GameOverMode" || state_name == "PauseMode") return
     }
-    background(SET.bg_color);
-    update_groups(SET.rendering_groups);
+    background(SETS[0].bg_color);
+    update_groups(SETS[0].rendering_groups);
+    //update_groups(SETS[1].rendering_groups);
   }
   setup();
 }

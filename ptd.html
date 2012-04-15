@@ -97,7 +97,7 @@
             <td> <button id='bomb_button' class='mode_button' onclick="aim_bomb();" accesskey="S">Drop <span class='hotkey'>B</span>omb - <span id="bomb_cost">50</span> Gold</button></td>
           </tr>
           <tr>
-            <td> <button onclick="nuke_creeps();" accesskey="N"> Launch <span class='hotkey'>N</span>uke - <span id="nukes_left"> 3 left </span></button></td>
+            <td> <button onclick="nuke_creeps(SETS[0]);" accesskey="N"> Launch <span class='hotkey'>N</span>uke - <span id="nukes_left"> 3 left </span></button></td>
           </tr>
         </table>
       </div>
@@ -208,7 +208,7 @@
     hotkeys["space"] = pause;
     hotkeys["esc"] = unselect;
     hotkeys['Z'] = function() {$('#log').empty()};
-    hotkeys['R'] = function() {if (SET.state.name() == "GameOverMode") reset_game();}
+    hotkeys['R'] = function() {if (SETS[0].state.name() == "GameOverMode") reset_game();}
     
     //modifiers to be called on keydown and keyup
     modifierkeys["shift"] = function() { shift_down = !shift_down; };
@@ -353,6 +353,7 @@
 
 <hr/>
 <p><a rel="license" href="http://www.opensource.org/licenses/mit-license.php">MIT License</a>, by <a href="http://lethain.com">Will Larson</a> and <a href="http://blog.rictic.com/">Peter Burns</a></p>
+<p>Multiplayer additions by <a href="http://github.com/tflovorn">Tim Lovorn</a> and Julius Jow.</p>
 <!-- <p>Sound effects are released under a <a href='http://creativecommons.org/licenses/sampling+/1.0/'>Creative Commons Sampling Plus 1.0 License</a> - For authorship information, see <a href='assets/LICENSE'>here</a></p> -->
 <div id="log"></div>
 <div id="sfx_dump"></div>

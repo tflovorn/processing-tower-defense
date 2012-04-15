@@ -15,7 +15,7 @@
   multiple existing creephpupdaters in the
   system rendering level.
  */
-var CreepHpUpdater = function(creep) {
+var CreepHpUpdater = function(SET, creep) {
   var chp = new Object();
   Object.extend(chp, InertDrawable);
   chp.update = function() {
@@ -24,7 +24,7 @@ var CreepHpUpdater = function(creep) {
   chp.should_die = false;
   chp.is_dead = function() {
     if (chp.should_die || !creep || !SET.state || SET.state.name() != "CreepSelectMode" || creep.is_dead()) {
-      unselect();
+      unselect(SET);
       if (chp.kz)
         chp.kz.is_dead = function() { return true; };
       return true;
@@ -33,10 +33,10 @@ var CreepHpUpdater = function(creep) {
   }
   chp.draw = function() {
     if (chp.kz) chp.kz.is_dead = function() { return true; };
-    chp.kz = KillZone(creep.x,creep.y,15);
+    chp.kz = KillZone(SET,creep.x,creep.y,15);
   }
 
-  assign_to_depth(chp, SET.system_render_level);
+  assign_to_depth(SET, chp, SET.system_render_level);
   return chp;
 }
 
@@ -148,7 +148,7 @@ var BossMixin = function(creep) {
   return creep;
 }
 
-var Creep = function(wave) {
+var Creep = function(SET, wave) {
   var cp = SET.creeps_spawned;
   var c = new Object();
   c.terrain = {"entrance":1.0,"exit":1.0,"mountain":0.75,"water":0.5,"neutral":1.0,"power plant":2.0};
@@ -170,7 +170,7 @@ var Creep = function(wave) {
     return false;
   }
   c.terrain_modified_speed = function() {
-    var terrain = get_terrain_at(this.gx,this.gy);
+    var terrain = get_terrain_at(SET,this.gx,this.gy);
     if (terrain) {
       var terrain_type = terrain.type;
       var terrain_modifier = c.terrain[terrain_type];
@@ -184,7 +184,7 @@ var Creep = function(wave) {
   c.ignores_towers = false;
 
   c.update = function() {
-    var gpos = pixel_to_grid(this);
+    var gpos = pixel_to_grid(SET, this);
     this.gx = gpos.gx;
     this.gy = gpos.gy;
     // if it reaches the exit, kill it, but reduce the players
@@ -194,7 +194,7 @@ var Creep = function(wave) {
       this.hp = -1;
       this.value = 0;
       SET.lives--;
-      if (SET.lives < 1) game_lost();
+      if (SET.lives < 1) game_lost(SET);
     }
     else if(!this.ignores_towers) {
       var elapsed = SET.now - this.last;
@@ -202,22 +202,22 @@ var Creep = function(wave) {
       var speed = (elapsed/1000) * terrain_modified_speed;
       this.last = SET.now;
 
-      var next_block = pathfind(gpos);
+      var next_block = pathfind(SET, gpos);
       if (next_block == undefined){
-        game_lost();
+        game_lost(SET);
         error("Pathfinding failed.  Erroring hard so that we catch these bugs.");
         log("creep",this);
         return;
       }
 
-      var coords = center_of_square(next_block.gx, next_block.gy)
-      move_towards(this,this.x,this.y,coords.x,coords.y,speed);
+      var coords = center_of_square(SET, next_block.gx, next_block.gy)
+      move_towards(SET,this,this.x,this.y,coords.x,coords.y,speed);
     }
     else if (this.ignores_towers) {
       var elapsed = SET.now - this.last;
       var terrain_modified_speed = this.terrain_modified_speed();
       var speed = (elapsed/1000) * terrain_modified_speed;
-      move_towards(this, this.x,this.y,SET.exit.x_mid,SET.exit.y_mid,speed)
+      move_towards(SET,this, this.x,this.y,SET.exit.x_mid,SET.exit.y_mid,speed)
       this.last = SET.now;
     }
   }
@@ -234,35 +234,31 @@ var Creep = function(wave) {
     WIDGETS.creep.style.display = "block";
   }
   SET.creeps_spawned++;
-  assign_to_depth(c, SET.creep_render_level);
+  assign_to_depth(SET, c, SET.creep_render_level);
   return c;
 };
 
-
-
-
 /* pathfinding */
 
-var known_best_paths = undefined;
-var reset_pathfinding = function(new_value) {
+var reset_pathfinding = function(SET, new_value) {
   if (new_value == undefined){
     var coords = [SET.exit.gx, SET.exit.gy];
     new_value = {};
     SET.grid_cache_reset_all_values_for_key("valid_tower_location");
     new_value[coords] = {}; //The actual value doesn't really matter
   }
-  var previous = known_best_paths;
-  known_best_paths = new_value;
+  var previous = SET.known_best_paths;
+  SET.known_best_paths = new_value;
   return previous;
 }
 
 //Could a creep occupy this square?
-var valid_path_location = function(gx, gy) {
+var valid_path_location = function(SET, gx, gy) {
   //out of bounds
   if (gx < 0 || gy < 0) return false;
   if (gx >= SET.gwidth || gy >= SET.gheight) return false;
   //a tower is present
-  if (get_tower_at(gx,gy) != false)
+  if (get_tower_at(SET,gx,gy) != false)
     return false;
   //a hypothetical tower is present (when selecting a space for a new tower)
   if (SET.considering_location && SET.considering_location.gx == gx && SET.considering_location.gy == gy)
@@ -270,11 +266,11 @@ var valid_path_location = function(gx, gy) {
   return true;
 }
 
-var pathfind = function(start_block) {
+var pathfind = function(SET, start_block) {
 //   log("pathfinding [from, to]", [start_block, SET.exit]);
-  if ([start_block.gx, start_block.gy] in known_best_paths) {
+  if ([start_block.gx, start_block.gy] in SET.known_best_paths) {
 //     log("path found from cache", start_block);
-    return known_best_paths[[start_block.gx, start_block.gy]].next_block.gpos;
+    return SET.known_best_paths[[start_block.gx, start_block.gy]].next_block.gpos;
   }
 
 
@@ -283,14 +279,16 @@ var pathfind = function(start_block) {
     var normal_dist = 10;
     [[0,1],[1,0],[-1,0],[0,-1]].forEach(function(pair) {
       var gpos = {gx:block.gpos.gx + pair[0], gy: block.gpos.gy + pair[1], dist:normal_dist};
-      if (valid_path_location(gpos.gx, gpos.gy))
+      if (valid_path_location(SET, gpos.gx, gpos.gy))
         candidates.push(gpos);
     });
 
     var diag_dist = 14; //sqrt(2) * 10
     [[1,1],[-1,-1],[1,-1],[-1,1]].forEach(function(pair){
       var gpos = {gx:block.gpos.gx + pair[0], gy: block.gpos.gy + pair[1], dist:diag_dist};
-      if (valid_path_location(gpos.gx, gpos.gy) && valid_path_location(block.gpos.gx, gpos.gy) && valid_path_location(gpos.gx, block.gpos.gy))
+      if (valid_path_location(SET, gpos.gx, gpos.gy) &&
+          valid_path_location(SET, block.gpos.gx, gpos.gy) &&
+          valid_path_location(SET, gpos.gx, block.gpos.gy))
         candidates.push(gpos);
     })
     return candidates;
@@ -319,20 +317,20 @@ var pathfind = function(start_block) {
 //       log("in closed, skipping", closed)
       continue;
     }
-    if ([block.gpos.gx, block.gpos.gy] in known_best_paths){
+    if ([block.gpos.gx, block.gpos.gy] in SET.known_best_paths){
       //logging:
 //       rpath = [];
       
       while ("ancestor" in block) {
         block.ancestor.next_block = block;
-        known_best_paths[[block.ancestor.gpos.gx, block.ancestor.gpos.gy]] = block.ancestor
+        SET.known_best_paths[[block.ancestor.gpos.gx, block.ancestor.gpos.gy]] = block.ancestor
 //         rpath.push({gx:block.gx, gy:block.gy});
         block = block.ancestor;
       }
 //       rpath.push({gx:block.gx, gy:block.gy});
 //       rpath.reverse();
 //       log("known_best_paths", known_best_paths);
-      var result = known_best_paths[[start_block.gx, start_block.gy]].next_block.gpos;
+      var result = SET.known_best_paths[[start_block.gx, start_block.gy]].next_block.gpos;
 //       log("path found!", rpath);
       return result;
     }

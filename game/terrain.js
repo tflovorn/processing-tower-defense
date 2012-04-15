@@ -1,9 +1,9 @@
 
 /* File to contain Terrain implementation.  */
 
-var NeutralTerrain = function(gx,gy) {
+var NeutralTerrain = function(SET,gx,gy) {
   var terrain_color = color(200,200,200);
-  var t = Square(gx,gy,terrain_color);
+  var t = Square(SET,gx,gy,terrain_color);
   t.type = "neutral";
   t.tower_range_modifier = 1.0;
   t.tower_damage_modifier = 1.0;
@@ -11,30 +11,30 @@ var NeutralTerrain = function(gx,gy) {
   return t;
 }
 
-var WaterTerrain = function(gx,gy) {
-  var t = NeutralTerrain(gx,gy);
+var WaterTerrain = function(SET,gx,gy) {
+  var t = NeutralTerrain(SET,gx,gy);
   t.color = color(78,150,236);
   t.type = "water";
   return t;
 }
   
-var MountainTerrain = function(gx,gy) {
-  var t = NeutralTerrain(gx,gy);
+var MountainTerrain = function(SET,gx,gy) {
+  var t = NeutralTerrain(SET,gx,gy);
   t.color = color(228,51,51);
   t.type = "mountain";
   t.tower_range_modifier = 1.25;
   return t;
 }
 
-var PowerPlantTerrain = function(gx,gy) {
-  var t = NeutralTerrain(gx,gy);
+var PowerPlantTerrain = function(SET,gx,gy) {
+  var t = NeutralTerrain(SET,gx,gy);
   t.color = color(189,194,78);
   t.type = "power plant";
   t.tower_damage_modifier = 2.0;
   return t;
 }
 
-var populate_terrains = function() {
+var populate_terrains = function(SET) {
   var p_mountains = SET.terrain_percent_mountains || 0.05;
   var p_water = SET.terrain_percent_water || 0.1;
   var p_power_plant = SET.terrain_percent_power_plant || 0.01;
@@ -54,10 +54,10 @@ var populate_terrains = function() {
   // are all neutral terrain
   for (var gy=0; gy<gheight; gy++) {
     if ( gy != entrance.gy ) {
-      NeutralTerrain(0,gy);
+      NeutralTerrain(SET,0,gy);
     }
     if ( gy != exit.gy ) {
-      NeutralTerrain(gwidth-1,gy);
+      NeutralTerrain(SET,gwidth-1,gy);
     }
   }
 
@@ -65,13 +65,13 @@ var populate_terrains = function() {
     for (var gy=0; gy<gheight; gy++) {
       var n = Math.random();
       if (n <= range_mountain)
-        MountainTerrain(gx,gy);
+        MountainTerrain(SET,gx,gy);
       else if (n <= range_water)
-        WaterTerrain(gx,gy);
+        WaterTerrain(SET,gx,gy);
       else if (n <= range_power_plant)
-        PowerPlantTerrain(gx,gy);
+        PowerPlantTerrain(SET,gx,gy);
       else
-        NeutralTerrain(gx,gy);
+        NeutralTerrain(SET,gx,gy);
     }
   }
 
