@@ -424,12 +424,8 @@ var error = function(msg) {
  */
 
 var start_tower_defense = function() {
-  setup = function() {
-    reset_game();
-    // TODO replace this with Node timing code
-    frameRate(SETS[0].framerate);
-  }
-  draw = function() {
+  var intervalId;
+  var draw = function() {
     if (SETS[0].state) {
       var state_name = SETS[0].state.name();
       if (state_name == "GameOverMode" || state_name == "PauseMode") return
@@ -437,5 +433,10 @@ var start_tower_defense = function() {
     update_groups(SETS[0].rendering_groups);
     update_groups(SETS[1].rendering_groups);
   }
+  var setup = function() {
+    reset_game();
+    intervalId = setInterval(draw, 1000.0 / SETS[0].framerate);
+  }
   setup();
+  // TODO clearInterval(intervalId) when game is done
 }
