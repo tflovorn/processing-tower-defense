@@ -31,9 +31,6 @@ example for others.
 // rendered at layer 0 will draw itself ontop of anything
 // rendered before layer 0.
 var assign_to_depth = function(SET, obj,depth) {
-  //console.log(SET);
-  //console.log(obj);
-  //console.log(depth);
   var rendering_group = SET.rendering_groups[depth];
   if (rendering_group == undefined) SET.rendering_groups[depth] = [obj];
   else rendering_group.push(obj);
@@ -408,51 +405,6 @@ var reset_game = function() {
   $('').trigger("game_over",false);
 };
 
-/*
-  Mouse functions.
- */
-
-var on_mouse_moved = function() {
-  var SET = SETS[0];
-  if (SET.state && SET.state.draw) {
-    var pos = mouse_pos();
-    SET.state.draw(pos.x + SET.x_offset, pos.y + SET.y_offset);
-  }
-};
-
-// user-interface modes that can be entered by clicking within
-// the game canvas (i.e. this does not include states reached
-// by clicking an html button)
-var UI_MODES_FROM_CLICK = [TowerSelectMode, CreepSelectMode];
-
-var on_mouse_press = function() {
-  var SET = SETS[0];
-  var pos = mouse_pos();
-  pos.x += SET.x_offset;
-  pos.y += SET.y_offset;
-  if (SET.state) {
-    if (SET.state.is_legal(pos.x,pos.y)) {
-      SET.state.action(pos.x,pos.y);
-    }
-    if (SET.state.can_leave_mode(pos.x,pos.y)) {
-      unselect(SET);
-    }
-  }
-  if (!SET.state) {
-    var len = UI_MODES_FROM_CLICK.length;
-    for (var i=0;i<len;i++) {
-      var modeFunc = UI_MODES_FROM_CLICK[i];
-      var mode = new modeFunc(SET);
-      if (mode.can_enter_mode(pos.x,pos.y)) {
-        SET.state = mode;
-        SET.state.set_up(pos.x,pos.y);
-        break;
-      }
-    }
-  }
-}
-
-
 var message = function(msg) {
   $('').trigger("message", msg);
 }
@@ -472,61 +424,18 @@ var error = function(msg) {
  */
 
 var start_tower_defense = function() {
-  var gameToken = loadPageVar("game");
-  var authToken = loadPageVar("auth");
-  now.ready(function () {
-    now.register(gameToken, authToken);
-  });
-
   setup = function() {
-    $('#pause_button').html("Pause");
-    set_canvas("tower_defense");
     reset_game();
-    size(SETS[1].x_offset + SETS[1].width
-       , SETS[1].y_offset + SETS[1].height);
+    // TODO replace this with Node timing code
     frameRate(SETS[0].framerate);
-    mouseMoved(on_mouse_moved);
-    mousePressed(on_mouse_press);
-    initProcessing();
   }
   draw = function() {
     if (SETS[0].state) {
       var state_name = SETS[0].state.name();
       if (state_name == "GameOverMode" || state_name == "PauseMode") return
     }
-    background(SETS[0].bg_color);
     update_groups(SETS[0].rendering_groups);
     update_groups(SETS[1].rendering_groups);
   }
   setup();
 }
-
-/*
-   Server interaction.
- */
-
-now.receiveGameInfo = function (info) {
-  alert(info["clients"]);
-};
-
-now.startGame = function (mySET, otherSET) {
-  SETS[0] = mySET;
-  SETS[1] = otherSET;
-  // TODO start game loop
-
-};
-
-var fastforwardSet = function (ffSET, comparisonSET) {
-  ffSET.fastforward = true;
-  while (ffSET.frame < comparisonSET.frame) {
-    update_groups(ffSET.rendering_groups);
-  }
-  ffSET.fastforward = false;
-};
-
-now.syncSets = function (mySET, otherSET) {
-  fastforwardSet(mySET, SETS[0]);
-  fastforwardSet(otherSET, SETS[1]);
-  SETS[0] = mySET;
-  SETS[1] = otherSET;
-};
