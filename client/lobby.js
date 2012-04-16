@@ -83,9 +83,11 @@ var newRoom = function () {
 // Join an existing room.
 var joinRoom = function () {
   var selectedRoom = document.getElementById('roomList').selectedIndex;
-  now.ready(function () {
-    now.joinRoom(selectedRoom);
-  });
+  if (selectedRoom !== undefined) {
+    now.ready(function () {
+      now.joinRoom(selectedRoom);
+    });
+  }
 };
 
 // This client is ready to start the game.

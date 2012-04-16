@@ -181,6 +181,8 @@ var default_set = function(x_offset, y_offset) {
 
   // timekeeping
   set.now = millis();
+  set.fastforward = false;
+  set.frame = 0;
 
   return set
 };
@@ -235,7 +237,17 @@ Object.extend(InertDrawable, {
 var SettingUpdater = function(SET) {
   var su = new Object();
   Object.extend(su, InertDrawable);
-  su.update = function() { SET.now = millis(); }
+  su.update = function() {
+    SET.frame += 1;
+    if (SET.fastforward) {
+      // is this the best way to set the frame time?
+      SET.now += 1000.0 / SET.framerate;
+    } else {
+      // Changed from millis() to allow for easier syncing of frames from
+      // different machines.
+      SET.now += 1000.0 / SET.framerate;
+    }
+  }
   assign_to_depth(SET, su, SET.system_render_level);
   return su;
 };
@@ -497,4 +509,19 @@ var start_tower_defense = function() {
 
 now.receiveGameInfo = function (info) {
   alert(info["clients"]);
+};
+
+var fastforwardSet = function (ffSET, comparisonSET) {
+  ffSET.fastforward = true;
+  while (ffSET.frame < comparisonSET.frame) {
+    update_groups(ffSET.rendering_groups);
+  }
+  ffSET.fastforward = false;
+};
+
+now.syncSets = function (mySet, otherSet) {
+  fastforwardSet(mySet, SETS[0]);
+  fastforwardSet(otherSet, SETS[1]);
+  SETS[0] = mySet;
+  SETS[1] = otherSet;
 };

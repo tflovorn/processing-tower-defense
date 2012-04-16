@@ -322,6 +322,8 @@ var PauseMode = function(SET) {
     $('').trigger("PauseMode");
   }
   this.tear_down = function() {
+// remove this section since time won't change during pause
+/*
     var elapsed = SET.now - this.began_at;
     SET.rendering_groups.forEach(function(group) {
       group.forEach(function(member) {
@@ -329,6 +331,7 @@ var PauseMode = function(SET) {
         member.last += elapsed;
       });
     });
+*/
   }
   this.name = function() { return "PauseMode"; };
 };
