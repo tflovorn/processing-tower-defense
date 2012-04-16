@@ -48,13 +48,11 @@ var update_groups = function(groups) {
     if ( x == undefined || x.is_dead()) return false;
     return true;
   };
-  var obj_draw = function(x) { x.draw(); };
   for (var i=groups.length-1;i>=0;i--) {
     var group = groups[i];
     if (group != undefined) {
       group.forEach(obj_update);
       var alive = group.filter(obj_is_alive);
-      alive.forEach(obj_draw);
       groups[i] = alive;
     }
   }
