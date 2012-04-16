@@ -2,7 +2,7 @@ var CreepWaveController = function(SET) {
   var cwc = new Object();
   Object.extend(cwc, InertDrawable);
   cwc.delay = 25000;
-  cwc.last = millis()-20000;
+  cwc.last = SET.now-20000;
   cwc.wave = 1;
   cwc.spawn_wave = function(bonus) {
     WIDGETS.wave.innerHTML = this.wave;

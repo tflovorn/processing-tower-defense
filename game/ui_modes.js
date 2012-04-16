@@ -318,11 +318,11 @@ var PauseMode = function(SET) {
     return false;
   };
   this.set_up = function() {
-    this.began_at = millis();
+    this.began_at = SET.now;
     $('').trigger("PauseMode");
   }
   this.tear_down = function() {
-    var elapsed = millis() - this.began_at;
+    var elapsed = SET.now - this.began_at;
     SET.rendering_groups.forEach(function(group) {
       group.forEach(function(member) {
       if (member.last)

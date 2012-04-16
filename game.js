@@ -108,6 +108,12 @@ var buildGameStatic = function () {
     .add(__dirname + '/jquery.ui-1.5/ui/effects.highlight.js')
     .write(publicDir + '/jquery.ui-1.5/ui')
   .end();
+  ams.build
+    .create(publicDir + '/assets')
+    .add(__dirname + '/assets/47251_nthompson_rocket.mp3')
+    .add(__dirname + '/assets/LICENSE')
+    .write(publicDir + '/assets')
+  .end();
   // game scripts
   ams.build
     .create(publicDir + '/game')

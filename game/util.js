@@ -263,3 +263,9 @@ var move_towards = function(SET,obj, x,y,tx,ty,speed) {
   obj.x = Math.max(0, Math.min(SET.x_offset + SET.width , obj.x));
   obj.y = Math.max(0, Math.min(SET.y_offset + SET.height, obj.y));
 }
+
+// Get the value of a single window.location.search key
+// https://developer.mozilla.org/en/DOM/window.location
+function loadPageVar (sVar) {
+  return unescape(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + escape(sVar).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
+}

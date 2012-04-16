@@ -179,6 +179,9 @@ var default_set = function(x_offset, y_offset) {
   // pathfinding
   set.known_best_paths = undefined;
 
+  // timekeeping
+  set.now = millis();
+
   return set
 };
 var SETS = [];
@@ -459,6 +462,12 @@ var error = function(msg) {
  */
 
 var start_tower_defense = function() {
+  var gameToken = loadPageVar("game");
+  var authToken = loadPageVar("auth");
+  now.ready(function () {
+    now.register(gameToken, authToken);
+  });
+
   setup = function() {
     $('#pause_button').html("Pause");
     set_canvas("tower_defense");
@@ -481,3 +490,11 @@ var start_tower_defense = function() {
   }
   setup();
 }
+
+/*
+   Server interaction.
+ */
+
+now.receiveGameInfo = function (info) {
+  alert(info["clients"]);
+};
