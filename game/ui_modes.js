@@ -83,7 +83,7 @@ var BuildTowerMode = function(SET) {
     var valid = pathfind(SET, {gx:SET.entrance.gx, gy:SET.entrance.gy});
     var creeps = SET.rendering_groups[SET.creep_render_level];
     creeps.forEach(function(creep){
-      valid = valid && pathfind(SET, pixel_to_grid(creep));
+      valid = valid && pathfind(SET, pixel_to_grid(SET, creep));
     });
     SET.considering_location = undefined;
     reset_pathfinding(SET, previous_pathfinding);

@@ -5,6 +5,7 @@ var express = require('express')
   , fs = require('fs')
   , ams = require('ams')
   , clientDir = __dirname + '/client'
+  , gameDir = __dirname + '/game'
   , publicDir = __dirname + '/game_public'
   , depsDir = __dirname + '/deps'
   , gamePort = 3000
@@ -91,18 +92,38 @@ var Game = function (id, token) {
 
 // Use ams to build public filesystem for game.
 var buildGameStatic = function () {
-  // client script
+  // client dependencies and page
   ams.build
     .create(publicDir)
-    .add(clientDir + '/game.js')
-    .combine({js: 'game.js'})
+    .add(__dirname + '/processing.js')
+    .add(__dirname + '/jsfprocessing.js')
+    .add(__dirname + '/jquery-1.2.6.min.js')
+    .add(__dirname + '/style.css')
+    .add(__dirname + '/ptd.html')
     .write(publicDir)
   .end();
-  // other pages and dependencies
+  ams.build
+    .create(publicDir + '/jquery.ui-1.5/ui')
+    .add(__dirname + '/jquery.ui-1.5/ui/effects.core.js')
+    .add(__dirname + '/jquery.ui-1.5/ui/effects.highlight.js')
+    .write(publicDir + '/jquery.ui-1.5/ui')
+  .end();
+  // game scripts
+  ams.build
+    .create(publicDir + '/game')
+    .add(gameDir + '/creep_waves.js')
+    .add(gameDir + '/terrain.js')
+    .add(gameDir + '/util.js')
+    .add(gameDir + '/creeps.js')
+    .add(gameDir + '/ui_modes.js')
+    .add(gameDir + '/weapons.js')
+    .add(gameDir + '/ptd.js')
+    .write(publicDir + '/game')
+  .end();
+  // other dependencies
   ams.build
     .create(publicDir)
     .add(depsDir + '/headjs/src/load.js')
-    .add(clientDir + '/game.html')
     .write(publicDir)
   .end();
 };

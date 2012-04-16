@@ -177,6 +177,8 @@
 <script src="game/ptd.js" type="text/javascript" charset="utf-8" ></script>
 <script src="jquery.ui-1.5/ui/effects.core.js" type="text/javascript" charset="utf-8"></script>
 <script src="jquery.ui-1.5/ui/effects.highlight.js" type="text/javascript" charset="utf-8"></script>
+<!-- now.js: this will need a template for non-localhost URL -->
+<script src="http://localhost:3000/nowjs/now.js"></script>
 </div>
 
 <script type="text/javascript" charset="utf-8">
@@ -249,7 +251,8 @@
     var paused = false;
     function pause() {
         paused = !paused;
-        pause_resume();
+        pause_resume(SETS[0]);
+        pause_resume(SETS[1]);
         $('#pause_button').html(paused ? "Resume" : "Pause");          
     }
     function mute() {

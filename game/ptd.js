@@ -345,10 +345,10 @@ var pause_resume = function(SET) {
     if (state_name == "GameOverMode")
       ;
     else if (state_name == "PauseMode") {
-      unselect();
+      unselect(SET);
     }
     else {
-      unselect();
+      unselect(SET);
       SET.state = new PauseMode(SET);
       SET.state.set_up();
     }

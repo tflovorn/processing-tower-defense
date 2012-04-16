@@ -100,6 +100,6 @@ var clientReady = function () {
 // (game server may be on a different domain, so these can't go in a cookie)
 now.startGame = function (gameToken, gameServer) {
   var auth = readCookie("authToken")
-    , url = gameServer + "/game.html?auth=" + auth + "&game=" + gameToken;
+    , url = gameServer + "/ptd.html?auth=" + auth + "&game=" + gameToken;
   window.location = url;
 };
