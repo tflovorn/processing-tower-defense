@@ -4,10 +4,12 @@ var express = require('express')
   , ioClient = require('socket.io-client')
   , fs = require('fs')
   , ams = require('ams')
-  , clientDir = __dirname + '/client'
-  , gameDir = __dirname + '/game'
-  , publicDir = __dirname + '/game_public'
-  , depsDir = __dirname + '/deps'
+  , ptd = require('./game_server/ptd.js')
+  , rootDir = __dirname
+  , clientDir = rootDir + '/client'
+  , gameDir = rootDir + '/game'
+  , publicDir = rootDir + '/game_public'
+  , depsDir = rootDir + '/deps'
   , gamePort = 3000
   , lobbyMessagePort = 3001
   , clients = []
@@ -32,7 +34,6 @@ var Client = function (id, authToken, name) {
   client.name = name;
   client.authToken = authToken;
   client.game = null; // client's game id
-  client.SET = null;  // client's game state
 
   return client;
 }
@@ -85,6 +86,19 @@ var Game = function (id, token) {
     }
   };
 
+  // TODO: Persist the outcome of a game.
+  game.reportOutcome = function (winner, loser) {
+
+  };
+
+  // Start the game!
+  game.start = function () {
+    var hooks = ptd.start_tower_defense(game.reportOutcome);
+    game.checkSets = hooks["checkSets"];
+    game.buildTower = hooks["buildTower"];
+    game.startWave = hooks["startWave"];
+  };
+
   return game;
 }
 
@@ -95,23 +109,23 @@ var buildGameStatic = function () {
   // client dependencies and page
   ams.build
     .create(publicDir)
-    .add(__dirname + '/processing.js')
-    .add(__dirname + '/jsfprocessing.js')
-    .add(__dirname + '/jquery-1.2.6.min.js')
-    .add(__dirname + '/style.css')
-    .add(__dirname + '/ptd.html')
+    .add(rootDir + '/processing.js')
+    .add(rootDir + '/jsfprocessing.js')
+    .add(rootDir + '/jquery-1.2.6.min.js')
+    .add(rootDir + '/style.css')
+    .add(rootDir + '/ptd.html')
     .write(publicDir)
   .end();
   ams.build
     .create(publicDir + '/jquery.ui-1.5/ui')
-    .add(__dirname + '/jquery.ui-1.5/ui/effects.core.js')
-    .add(__dirname + '/jquery.ui-1.5/ui/effects.highlight.js')
+    .add(rootDir + '/jquery.ui-1.5/ui/effects.core.js')
+    .add(rootDir + '/jquery.ui-1.5/ui/effects.highlight.js')
     .write(publicDir + '/jquery.ui-1.5/ui')
   .end();
   ams.build
     .create(publicDir + '/assets')
-    .add(__dirname + '/assets/47251_nthompson_rocket.mp3')
-    .add(__dirname + '/assets/LICENSE')
+    .add(rootDir + '/assets/47251_nthompson_rocket.mp3')
+    .add(rootDir + '/assets/LICENSE')
     .write(publicDir + '/assets')
   .end();
   // game scripts

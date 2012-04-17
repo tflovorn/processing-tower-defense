@@ -19,9 +19,12 @@ with the hope that it might serve as an useful
 example for others.
 */
 
-// API for use with game server:
+// start_tower_defense forms the API for use with game.js server.
 // Input = callback to use here for reporting game outcome.
-// Output = callback to use elsewhere to check state.
+// Output = functions to use in game.js for:
+//    check game state
+//    build a tower
+//    spawn a wave
 exports.start_tower_defense = start_tower_defense;
 
 /*
@@ -418,6 +421,7 @@ var error = function(msg) {
 var start_tower_defense = function(reportOutcome) {
   var intervalId;
   var draw = function() {
+    // TODO integrate reportOutcome
     if (SETS[0].state) {
       var state_name = SETS[0].state.name();
       if (state_name == "GameOverMode" || state_name == "PauseMode") return
@@ -432,10 +436,28 @@ var start_tower_defense = function(reportOutcome) {
   setup();
   // TODO clearInterval(intervalId) when game is done
 
-  var checkSets = function () {
+  var hooks = new Object();
+  hooks.checkSets = function () {
     return SETS;
-  }
-  return checkSets;
+  };
+
+  // TODO build a tower on SETS[player] of given type at given position
+  hooks.buildTower = function(player, type, gx, gy) {
+
+  };
+
+  // TODO start a wave on the opposite player (SETS[target])
+  hooks.startWave = function(player) {
+    var target;
+    if (player == 0) {
+      target = 1;
+    } else {
+      target = 0;
+    }
+
+  };
+
+  return hooks;
 }
 
 /*
