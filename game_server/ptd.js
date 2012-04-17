@@ -19,8 +19,6 @@ with the hope that it might serve as an useful
 example for others.
 */
 
-var extend = require('./extend.js');
-
 /*
   Changes to basic JS objects
 */
