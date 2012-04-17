@@ -45,6 +45,16 @@ var Game = function (id, token) {
   game.token = token;
   game.clients = [];
 
+  // Return the position in game.clients of the client with given id.
+  game.getClientNumber = function (clientId) {
+    for (var i = 0; i < game.clients.length; i++) {
+      if (clientId === game.clients[i].id) {
+        return i;
+      }
+    }
+    return -1;
+  };
+
   // Get names of all clients in the game.
   game.clientNames = function () {
     var names = [];
@@ -86,9 +96,13 @@ var Game = function (id, token) {
     }
   };
 
-  // TODO: Persist the outcome of a game.
+  // Persist the outcome of a game.
+  // Winner and loser are numbers indicating the index of associated clients.
   game.reportOutcome = function (winner, loser) {
-
+    var winnerName = game.clients[winner]
+      , loserName = game.clients[loser]
+      , callback = function (resp) {};
+    reportGame(winnerName, loserName, callback);
   };
 
   // Start the game!
@@ -202,6 +216,38 @@ var disconnectFromGame = function (clientId) {
   if (client && client.game !== null) {
     games[client.game].leave(client);
   }
+};
+
+var getGameFromClientId = function (clientId) {
+  var client = clients[clientId];
+  if (!client) {
+    return null;
+  }
+  var game = games[client.game];
+  if (!game) {
+    return null;
+  }
+  return game;
+}
+
+// Client wants to build a tower.
+everyone.now.buildTower = function (type, gx, gy) {
+  var game = getGameFromClientId(this.user.clientId);
+  if (!game || game.buildTower === undefined) {
+    return false;
+  }
+  var player = game.getClientNumber(this.user.clientId);
+  return game.buildTower(player, type, gx, gy);
+};
+
+// Client wants to spawn a wave of creeps.
+everyone.now.startWave = function () {
+  var game = getGameFromClientId(this.user.clientId);
+  if (!game || game.startWave === undefined) {
+    return false;
+  }
+  var player = game.getClientNumber(this.user.clientId);
+  return game.startWave(player);
 };
 
 // --- Lobby to game communication ---
