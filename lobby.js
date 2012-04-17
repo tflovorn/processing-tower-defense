@@ -204,6 +204,9 @@ everyone.now.joinRoom = function (roomId) {
   var client = clients[this.user.clientId];
   client.leaveCurrentRoom();
   var room = rooms[roomId];
+  if (!room) {
+    return;
+  }
   room.join(client);
   this.now.receiveRoomInfo(room.info(), roomNames());
 };
