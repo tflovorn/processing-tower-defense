@@ -180,7 +180,7 @@ var default_set = function(x_offset, y_offset) {
   set.known_best_paths = undefined;
 
   // timekeeping
-  set.now = millis();
+  set.now = 0;
   set.fastforward = false;
   set.frame = 0;
 
@@ -470,20 +470,46 @@ var error = function(msg) {
 }
 
 /*
-   Main game loop.
+   Server interaction.
  */
 
+// Called upon loading the page.
 var start_tower_defense = function() {
   var gameToken = loadPageVar("game");
   var authToken = loadPageVar("auth");
   now.ready(function () {
     now.register(gameToken, authToken);
   });
+}
 
+// Recieve meta-game information from the game server.
+now.receiveGameInfo = function (info) {
+  //alert(info["clients"]);
+};
+
+// Don't sync these properties with the server.
+var saveAttrs = ["state", "bg_colors", "bg_color", "grid_color"
+               , "entrance_color", "exit_color", "killzone_color"
+               , "creep_color"];
+
+// Copy properties of source into dest, ignoring saveAttrs.
+var copySet = function (dest, source, saveAttrs) {
+  for (var prop in source) {
+    if (source.hasOwnProperty(prop) && saveAttrs.indexOf(prop) === -1) {
+      dest[prop] = source[prop];
+    }
+  }
+};
+
+// Main game loop:
+// Begin a game of tower defense using the given sets.
+now.startGame = function (mySET, otherSET) {
   setup = function() {
     $('#pause_button').html("Pause");
     set_canvas("tower_defense");
     reset_game();
+    copySet(SETS[0], mySET, saveAttrs);
+    copySet(SETS[1], otherSET, saveAttrs);
     size(SETS[1].x_offset + SETS[1].width
        , SETS[1].y_offset + SETS[1].height);
     frameRate(SETS[0].framerate);
@@ -501,23 +527,9 @@ var start_tower_defense = function() {
     update_groups(SETS[1].rendering_groups);
   }
   setup();
-}
-
-/*
-   Server interaction.
- */
-
-now.receiveGameInfo = function (info) {
-  alert(info["clients"]);
 };
 
-now.startGame = function (mySET, otherSET) {
-  SETS[0] = mySET;
-  SETS[1] = otherSET;
-  // TODO start game loop
-
-};
-
+// Update ffSET until its time matches comparisonSET.
 var fastforwardSet = function (ffSET, comparisonSET) {
   ffSET.fastforward = true;
   while (ffSET.frame < comparisonSET.frame) {
@@ -526,9 +538,10 @@ var fastforwardSet = function (ffSET, comparisonSET) {
   ffSET.fastforward = false;
 };
 
+// Synchronize the local SETS with the ones provided by the server.
 now.syncSets = function (mySET, otherSET) {
   fastforwardSet(mySET, SETS[0]);
   fastforwardSet(otherSET, SETS[1]);
-  SETS[0] = mySET;
-  SETS[1] = otherSET;
+  copySet(SETS[0], mySET, saveAttrs);
+  copySet(SETS[1], otherSET, saveAttrs);
 };

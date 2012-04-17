@@ -43,12 +43,12 @@ var Game = function (id, token) {
   var game = new Object();
   game.id = id;
   game.token = token;
-  game.clients = [];
+  game.clients = []; // client id
 
   // Return the position in game.clients of the client with given id.
   game.getClientNumber = function (clientId) {
     for (var i = 0; i < game.clients.length; i++) {
-      if (clientId === game.clients[i].id) {
+      if (clientId === game.clients[i]) {
         return i;
       }
     }
@@ -83,6 +83,10 @@ var Game = function (id, token) {
       }
       nowjs.getGroup(game.id).addUser(client.id);
     }
+    // We have the right number of clients to start!
+    if (game.clients.length === 2) {
+      game.start();
+    }
   };
 
   // Remove a client from this game.
@@ -111,6 +115,29 @@ var Game = function (id, token) {
     game.checkSets = hooks["checkSets"];
     game.buildTower = hooks["buildTower"];
     game.startWave = hooks["startWave"];
+    var sets = game.checkSets();
+    nowjs.getClient(game.clients[0], function () {
+      this.now.startGame(sets[0], sets[1]);
+    });
+    nowjs.getClient(game.clients[1], function () {
+      this.now.startGame(sets[1], sets[0]);
+    });
+    var intervalId = setInterval(game.syncSets, 200.0);
+    // TODO clearInterval(intervalId) when game is done
+  };
+
+  // Push game state to clients.
+  game.syncClients = function () {
+    if (game.clients.length < 2 || game.checkSets === undefined) {
+      return;
+    }
+    var sets = game.checkSets();
+    nowjs.getClient(game.clients[0], function () {
+      this.now.syncSets(sets[0], sets[1]);
+    });
+    nowjs.getClient(game.clients[1], function () {
+      this.now.syncSets(sets[1], sets[0]);
+    });
   };
 
   return game;

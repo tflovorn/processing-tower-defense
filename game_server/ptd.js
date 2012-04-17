@@ -19,14 +19,6 @@ with the hope that it might serve as an useful
 example for others.
 */
 
-// start_tower_defense forms the API for use with game.js server.
-// Input = callback to use here for reporting game outcome.
-// Output = functions to use in game.js for:
-//    check game state
-//    build a tower
-//    spawn a wave
-exports.start_tower_defense = start_tower_defense;
-
 /*
   Changes to basic JS objects
 */
@@ -160,7 +152,8 @@ var default_set = function(x_offset, y_offset) {
     }
   }
 
-  // colors
+  // colors (exclude - missing processing.js color function)
+/*
   set.bg_colors = {neutral:color(90,80,70),
                    positive:color(60,80,250),
                    negative:color(250,80,60)};
@@ -170,7 +163,7 @@ var default_set = function(x_offset, y_offset) {
   set.exit_color = color(255,100,50);
   set.killzone_color = color(200,50,50,0.5);
   set.creep_color = color(255,255,0);
-
+*/
   // rendering groups
   set.rendering_groups = [];
   for (var i=0;        i <= 7; i++) set.rendering_groups.push([]);
@@ -206,7 +199,7 @@ var default_set = function(x_offset, y_offset) {
   set.known_best_paths = undefined;
 
   // timekeeping
-  set.now = millis();
+  set.now = 0;
   set.fastforward = false;
   set.frame = 0;
 
@@ -387,8 +380,6 @@ var generate_map = function(SET) {
 var reset_game = function() {
   SETS[0] = default_set(0, 0);
   SETS[1] = default_set(700, 0);
-  WIDGETS = fetch_ui_widgets();
-  WIDGETS.bomb_cost.innerHTML = SETS[0].bomb_cost;
   SettingUpdater(SETS[0]);
   SettingUpdater(SETS[1]);
   UIUpdater(SETS[0]);
@@ -418,6 +409,12 @@ var error = function(msg) {
    Main game loop.
  */
 
+// start_tower_defense forms the API for use with game.js server.
+// Input = callback to use here for reporting game outcome.
+// Output = functions to use in game.js for:
+//    check game state
+//    build a tower
+//    spawn a wave
 var start_tower_defense = function(reportOutcome) {
   var intervalId;
   var draw = function() {
@@ -459,6 +456,7 @@ var start_tower_defense = function(reportOutcome) {
 
   return hooks;
 }
+exports.start_tower_defense = start_tower_defense;
 
 /*
   creeps.js
