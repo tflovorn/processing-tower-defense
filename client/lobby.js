@@ -42,8 +42,22 @@ var fillRoomList = function (roomNames) {
   fillSelect("roomList", roomNames);
 };
 
+var readyIndicators = function (clientNames) {
+  var names = clientNames[0]
+    , readys = clientNames[1]
+    , output = [];
+  for (var i = 0; i < names.length; i++) {
+    if (readys[i]) {
+      output[i] = names[i] + " (Ready!)";
+    } else {
+      output[i] = names[i];
+    }
+  }
+  return output;  
+};
+
 var fillClientList = function (clientNames) {
-  fillSelect("clientList", clientNames);
+  fillSelect("clientList", readyIndicators(clientNames));
 };
 
 // Write a line to the chatDisplay textarea.

@@ -60,19 +60,21 @@ var Room = function(id, name, canStartGame) {
   room.clients = [];  // list of clientIds present in this room
 
   // Get names of all clients in the room.
-  room.clientNames = function () {
-    // build list of client names from clientIds
-    var names = [];
+  room.clientInfo = function () {
+    // build list of client info from clientIds
+    var names = []
+      , ready = [];
     for (var i = 0; i < room.clients.length; i++) {
       var client = clients[room.clients[i]];
       names.push(client.name);
+      ready.push(client.ready);
     }
-    return names;
+    return [names, ready];
   };
 
   // Information client needs to render the room.
   room.info = function () {
-    return {"name": room.name, "clients": room.clientNames()};
+    return {"name": room.name, "clients": room.clientInfo()};
   };
 
   // Add a client to this room.
@@ -239,7 +241,7 @@ everyone.now.clientReady = function () {
     return;
   }
   roomId = client.room;
-  if (roomId === null || roomId === undefined) {
+  if (roomId === null || roomId === undefined || roomId === entryRoomId) {
     return;
   }
   room = rooms[roomId];
@@ -247,6 +249,7 @@ everyone.now.clientReady = function () {
     return;
   }
   client.ready = true;
+  nowjs.getGroup(room.id).now.receiveRoomInfo(room.info(), false)
   if (room.allReady()) {
     startGame(room);
   }
