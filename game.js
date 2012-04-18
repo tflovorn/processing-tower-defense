@@ -5,6 +5,7 @@ var express = require('express')
   , fs = require('fs')
   , ams = require('ams')
   , ptd = require('./game_server/ptd.js')
+  , cycle = require('./cycle.js')
   , rootDir = __dirname
   , clientDir = rootDir + '/client'
   , gameDir = rootDir + '/game'
@@ -116,6 +117,8 @@ var Game = function (id, token) {
     game.buildTower = hooks["buildTower"];
     game.startWave = hooks["startWave"];
     var sets = game.checkSets();
+    sets[0] = cycle.decycle(sets[0]);
+    sets[1] = cycle.decycle(sets[1]);
     nowjs.getClient(game.clients[0], function () {
       this.now.startGame(sets[0], sets[1]);
     });
@@ -132,6 +135,8 @@ var Game = function (id, token) {
       return;
     }
     var sets = game.checkSets();
+    sets[0] = cycle.decycle(sets[0]);
+    sets[1] = cycle.decycle(sets[1]);
     nowjs.getClient(game.clients[0], function () {
       this.now.syncSets(sets[0], sets[1]);
     });

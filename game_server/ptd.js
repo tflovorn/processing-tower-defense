@@ -62,10 +62,12 @@ var assign_to_depth = function(SET, obj,depth) {
 // updates any groups
 var update_groups = function(groups) {
   var obj_update = function(x) {
-    if (x != undefined) x.update();
+    if (x != undefined && x.update !== undefined) x.update();
   };
   var obj_is_alive = function(x) {
-    if ( x == undefined || x.is_dead()) return false;
+    if ( x == undefined || (x.is_dead !== undefined && x.is_dead())) {
+      return false;
+    }
     return true;
   };
   for (var i=groups.length-1;i>=0;i--) {

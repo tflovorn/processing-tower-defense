@@ -19,6 +19,78 @@ with the hope that it might serve as an useful
 example for others.
 */
 
+/*
+  Douglas Crockford's cycle-restorer for deserialization.
+  From: https://github.com/douglascrockford/JSON-js/blob/master/cycle.js
+*/
+
+retrocycle = function retrocycle($) {
+    'use strict';
+
+// Restore an object that was reduced by decycle. Members whose values are
+// objects of the form
+//      {$ref: PATH}
+// are replaced with references to the value found by the PATH. This will
+// restore cycles. The object will be mutated.
+
+// The eval function is used to locate the values described by a PATH. The
+// root object is kept in a $ variable. A regular expression is used to
+// assure that the PATH is extremely well formed. The regexp contains nested
+// * quantifiers. That has been known to have extremely bad performance
+// problems on some browsers for very long strings. A PATH is expected to be
+// reasonably short. A PATH is allowed to belong to a very restricted subset of
+// Goessner's JSONPath.
+
+// So,
+//      var s = '[{"$ref":"$"}]';
+//      return JSON.retrocycle(JSON.parse(s));
+// produces an array containing a single element which is the array itself.
+
+    var px =
+        /^\$(?:\[(?:\d+|\"(?:[^\\\"\u0000-\u001f]|\\([\\\"\/bfnrt]|u[0-9a-zA-Z]{4}))*\")\])*$/;
+
+    (function rez(value) {
+
+// The rez function walks recursively through the object looking for $ref
+// properties. When it finds one that has a value that is a path, then it
+// replaces the $ref object with a reference to the value that is found by
+// the path.
+
+        var i, item, name, path;
+
+        if (value && typeof value === 'object') {
+            if (Object.prototype.toString.apply(value) === '[object Array]') {
+                for (i = 0; i < value.length; i += 1) {
+                    item = value[i];
+                    if (item && typeof item === 'object') {
+                        path = item.$ref;
+                        if (typeof path === 'string' && px.test(path)) {
+                            value[i] = eval(path);
+                        } else {
+                            rez(item);
+                        }
+                    }
+                }
+            } else {
+                for (name in value) {
+                    if (typeof value[name] === 'object') {
+                        item = value[name];
+                        if (item) {
+                            path = item.$ref;
+                            if (typeof path === 'string' && px.test(path)) {
+                                value[name] = eval(path);
+                            } else {
+                                rez(item);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }($));
+    return $;
+};
+
 // Don't sync these properties with the server. (extend ignores)
 var saveAttrs = ["state", "bg_colors", "bg_color", "grid_color"
                , "entrance_color", "exit_color", "killzone_color"
@@ -101,7 +173,7 @@ var jqExtend = function() {
       // Extend the base object
       for ( name in options ) {
         // Ignore names in saveAttrs
-        if (saveAttrs.indexof(name) !== -1) {
+        if (saveAttrs.indexOf(name) !== -1) {
           continue;
         }
 
@@ -166,13 +238,15 @@ var assign_to_depth = function(SET, obj,depth) {
 // updates any groups
 var update_groups = function(groups) {
   var obj_update = function(x) {
-    if (x != undefined) x.update();
+    if (x != undefined && x.update !== undefined) x.update();
   };
   var obj_is_alive = function(x) {
-    if ( x == undefined || x.is_dead()) return false;
+    if ( x == undefined || (x.is_dead !== undefined && x.is_dead())) {
+      return false;
+    }
     return true;
   };
-  var obj_draw = function(x) { x.draw(); };
+  var obj_draw = function(x) { if (x.draw !== undefined) x.draw(); };
   for (var i=groups.length-1;i>=0;i--) {
     var group = groups[i];
     if (group != undefined) {
@@ -619,6 +693,8 @@ var copySet = function (dest, source) {
 // Main game loop:
 // Begin a game of tower defense using the given sets.
 now.startGame = function (mySET, otherSET) {
+  mySET = retrocycle(mySET);
+  otherSET = retrocycle(mySET);
   setup = function() {
     $('#pause_button').html("Pause");
     set_canvas("tower_defense");
@@ -655,6 +731,8 @@ var fastforwardSet = function (ffSET, comparisonSET) {
 
 // Synchronize the local SETS with the ones provided by the server.
 now.syncSets = function (mySET, otherSET) {
+  mySET = retrocycle(mySET);
+  otherSET = retrocycle(mySET);
   fastforwardSet(mySET, SETS[0]);
   fastforwardSet(otherSET, SETS[1]);
   copySet(SETS[0], mySET);
