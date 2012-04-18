@@ -13,28 +13,37 @@ var readCookie = function (name) {
   return null;
 };
 
-// Fill the roomList with given room names.
+// Fill the given select element with the given list of values.
 // http://www.mredkj.com/tutorials/tutorial005.html
-var fillRoomList = function (roomNames) {
-  var roomList = document.getElementById('roomList');
-  // remove existing list (bugged unless iteration starts at the end)
+var fillSelect = function (elementName, values) {
+  var select = document.getElementById(elementName);
+  // Remove existing list.
+  // Iteration must start at the end here - bugged otherwise.
   // (might be able to start iteration at 0 using Resig's Array.remove)
   var i;
-  for (i = roomList.length-1; i >= 0; i--) {
-    roomList.remove(i);
+  for (i = select.length-1; i >= 0; i--) {
+    select.remove(i);
   }
   // fill with roomNames
-  for (i = 0; i < roomNames.length; i++) {
-    var room = document.createElement('option');
-    room.text = roomNames[i];
-    room.value = i;
+  for (i = 0; i < select.length; i++) {
+    var elem = document.createElement('option');
+    elem.text = values[i];
+    elem.value = i;
     try {
-      roomList.add(room, null); // standards compliant; doesn't work in IE
+      select.add(elem, null); // standards compliant; doesn't work in IE
     }
     catch(ex) {
-      roomList.add(room); // IE only
+      select.add(elem); // IE only
     }
   }
+};
+
+var fillRoomList = function (roomNames) {
+  fillSelect("roomList", roomNames);
+};
+
+var fillClientList = function (clientNames) {
+  fillSelect("clientList", clientNames);
 };
 
 // Write a line to the chatDisplay textarea.
@@ -55,9 +64,12 @@ var startLobby = function () {
 
 // Joined a new room: accept room info.
 // (end up here after registration, room creation, or basic room join)
-now.receiveRoomInfo = function (myRoomInfo, roomNames) {
+now.receiveRoomInfo = function (myRoomInfo, roomNames, moved) {
   fillRoomList(roomNames);
-  writeText("--- Joined room: " + myRoomInfo["name"]);
+  fillClientList(myRoomInfo["clients"]);
+  if (moved) {
+    writeText("--- Joined room: " + myRoomInfo["name"]);
+  }
 };
 
 // Recieve a chat message.

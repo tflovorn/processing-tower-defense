@@ -170,7 +170,7 @@ everyone.now.register = function (authToken) {
     clients[self.user.clientId] = client;
     var room = enterLobby(client);
     // Send client back the data it needs for the room.
-    self.now.receiveRoomInfo(room.info(), roomNames());
+    self.now.receiveRoomInfo(room.info(), roomNames(), true);
   });
 };
 
@@ -196,7 +196,7 @@ everyone.now.newRoom = function () {
   var room = Room(rooms.length, client.name + "'s room", true);
   room.join(client);
   rooms.push(room);
-  this.now.receiveRoomInfo(room.info(), roomNames());
+  this.now.receiveRoomInfo(room.info(), roomNames(), true);
 };
 
 // Client is switching rooms.
@@ -208,7 +208,7 @@ everyone.now.joinRoom = function (roomId) {
     return;
   }
   room.join(client);
-  this.now.receiveRoomInfo(room.info(), roomNames());
+  this.now.receiveRoomInfo(room.info(), roomNames(), true);
 };
 
 // Client is sending a chat line.
