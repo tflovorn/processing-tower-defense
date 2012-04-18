@@ -1,3 +1,7 @@
+// Login+Lobby server.
+
+// needs to respond to client disconnect from lobby!
+
 var express = require('express')
   , nowjs = require('now')
   , io = require('socket.io-client')
@@ -29,7 +33,7 @@ var Client = function (id, authToken, name) {
   client.id = id;
   client.authToken = authToken;
   client.name = name;
-  client.room = null;
+  client.room = null; // room id
   client.ready = false;
 
   // Remove this client from its room.
@@ -84,10 +88,10 @@ var Room = function(id, name, canStartGame) {
   // Remove a client from this room.
   room.leave = function (leavingClient) {
     for (var i = 0; i < room.clients.length; i++) {
-      var client = clients[room.clients[i]];
-      if (client.id === leavingClient.id) {
+      var id = room.clients[i];
+      if (id === leavingClient.id) {
         room.clients.remove(i);
-        nowjs.getGroup(room.id).removeUser(client.id);
+        nowjs.getGroup(room.id).removeUser(id);
       }
     }
   };
@@ -169,8 +173,12 @@ everyone.now.register = function (authToken) {
     var client = Client(self.user.clientId, authToken, response["username"]);
     clients[self.user.clientId] = client;
     var room = enterLobby(client);
+    // Inform clients in the entrance about the new client.
     // Send client back the data it needs for the room.
-    self.now.receiveRoomInfo(room.info(), roomNames(), true);
+    // These are kind of redundant.
+    nowjs.getGroup(room.id).now.receiveRoomInfo(room.info(), false)
+    self.now.receiveRoomInfo(room.info(), true);
+    self.now.receiveRooms(roomNames());
   });
 };
 
@@ -192,23 +200,29 @@ var roomNames = function () {
 // Client is creating a new room and joining it.
 everyone.now.newRoom = function () {
   var client = clients[this.user.clientId];
+  var oldRoom = rooms[client.room];
   client.leaveCurrentRoom();
   var room = Room(rooms.length, client.name + "'s room", true);
   room.join(client);
   rooms.push(room);
-  this.now.receiveRoomInfo(room.info(), roomNames(), true);
+  everyone.now.receiveRooms(roomNames());
+  nowjs.getGroup(oldRoom.id).now.receiveRoomInfo(oldRoom.info(), false)
+  this.now.receiveRoomInfo(room.info(), true);
 };
 
 // Client is switching rooms.
 everyone.now.joinRoom = function (roomId) {
   var client = clients[this.user.clientId];
+  var oldRoom = rooms[client.room];
   client.leaveCurrentRoom();
   var room = rooms[roomId];
   if (!room) {
     return;
   }
   room.join(client);
-  this.now.receiveRoomInfo(room.info(), roomNames(), true);
+  nowjs.getGroup(oldRoom.id).now.receiveRoomInfo(oldRoom.info(), false)
+  nowjs.getGroup(room.id).now.receiveRoomInfo(room.info(), false)
+  this.now.receiveRoomInfo(room.info(), true);
 };
 
 // Client is sending a chat line.

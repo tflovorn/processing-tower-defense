@@ -25,7 +25,7 @@ var fillSelect = function (elementName, values) {
     select.remove(i);
   }
   // fill with roomNames
-  for (i = 0; i < select.length; i++) {
+  for (i = 0; i < values.length; i++) {
     var elem = document.createElement('option');
     elem.text = values[i];
     elem.value = i;
@@ -64,12 +64,15 @@ var startLobby = function () {
 
 // Joined a new room: accept room info.
 // (end up here after registration, room creation, or basic room join)
-now.receiveRoomInfo = function (myRoomInfo, roomNames, moved) {
-  fillRoomList(roomNames);
+now.receiveRoomInfo = function (myRoomInfo, moved) {
   fillClientList(myRoomInfo["clients"]);
   if (moved) {
     writeText("--- Joined room: " + myRoomInfo["name"]);
   }
+};
+
+now.receiveRooms = function (roomNames) {
+  fillRoomList(roomNames);
 };
 
 // Recieve a chat message.
