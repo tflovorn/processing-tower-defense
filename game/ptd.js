@@ -19,6 +19,11 @@ with the hope that it might serve as an useful
 example for others.
 */
 
+// Don't sync these properties with the server. (extend ignores)
+var saveAttrs = ["state", "bg_colors", "bg_color", "grid_color"
+               , "entrance_color", "exit_color", "killzone_color"
+               , "creep_color", "color", "fill_color"];
+
 // The following implements the jQuery extend method, modified to ignore
 // functions. To deep copy: extend(true, target, object).
 // Obtained from https://github.com/jquery/jquery/blob/master/src/core.js
@@ -63,12 +68,6 @@ var isPlainObject =  function( obj ) {
 var isArray = function (obj) {
   return typeof(obj) === "array";
 };
-
-// Don't sync these properties with the server. (extend ignores)
-var saveAttrs = ["state", "bg_colors", "bg_color", "grid_color"
-               , "entrance_color", "exit_color", "killzone_color"
-               , "creep_color"];
-
 
 var jqExtend = function() {
   var options, name, src, copy, copyIsArray, clone,

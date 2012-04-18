@@ -245,12 +245,6 @@ var UIUpdater = function(SET) {
   Object.extend(uiu, InertDrawable);
 
   uiu.update = function() {
-    WIDGETS.creep_variety.innerHTML = SET.creep_variety;
-    WIDGETS.score.innerHTML = SET.score;
-    WIDGETS.gold.innerHTML = SET.gold;
-    WIDGETS.lives.innerHTML = SET.lives;
-    WIDGETS.nukes_left.innerHTML = SET.nukes + " left";
-    WIDGETS.till_next_wave.innerHTML = Math.floor(((SET.creep_wave_controller.last + SET.creep_wave_controller.delay) - SET.now) / 1000)
   };
   assign_to_depth(SET, uiu, SET.system_render_level);
   return uiu;
@@ -261,18 +255,6 @@ var Grid = function(SET) {
   var grid = new Object();
   Object.extend(grid, InertDrawable);
   grid.draw = function() {
-    stroke(SET.grid_color);
-    var p = SET.pixels_per_square;
-    var xo = SET.x_offset;
-    var yo = SET.y_offset;
-    var w = SET.width;
-    var h = SET.height;
-    for (i = xo; i<w+xo; i+=p) {
-      line(i, 0, i, h);
-    }
-    for (i = yo; i<h+yo; i+=p) {
-      line(0,i,w,i);
-    }
   };
   assign_to_depth(SET, grid, SET.grid_render_level);
   return grid;
@@ -296,9 +278,6 @@ var Square = function(SET,gx,gy,color) {
   var square = GridSquare(SET,gx,gy,color);
   square.color = color;
   square.draw = function() {
-    noStroke();
-    fill(this.color);
-    draw_square_in_grid(SET,this.gx,this.gy);
   }
   assign_to_depth(SET, square, SET.square_render_level);
   return square;
@@ -307,12 +286,6 @@ var ExitSquare = function(SET,gx,gy) {
   var square = Square(SET,gx,gy,SET.exit_color);
   square.type = "exit";
   square.draw = function() {
-    noStroke();
-    fill(SET.exit_color);
-    draw_square_in_grid(SET,this.gx,this.gy);
-    noFill();
-    stroke("black");
-    draw_circle_in_grid(SET,this.gx,this.gy);
   }
   return square;
 }
@@ -371,7 +344,7 @@ var game_lost = function(SET) {
  */
 
 var generate_map = function(SET) {
-  SET.entrance = Square(SET, 0, random(SET.gheight-1), SET.entrance_color);
+  SET.entrance = Square(SET, 0, random(SET.gheight-1), null);
   SET.entrance.type = "entrance";
   SET.exit = ExitSquare(SET, SET.gwidth-1, random(SET.gheight-1));
   populate_terrains(SET);
@@ -481,7 +454,6 @@ var CreepHpUpdater = function(SET, creep) {
   var chp = new Object();
   Object.extend(chp, InertDrawable);
   chp.update = function() {
-    WIDGETS.creep_hp.innerHTML = creep.hp;
   }
   chp.should_die = false;
   chp.is_dead = function() {
@@ -583,7 +555,6 @@ var ImmuneMixin = function(creep) {
 }
 
 var StrongMixin = function(creep) {
-  creep.color = color(0,255,255);
   creep.size = creep.size * 1.3;
   creep.hp = Math.floor(creep.hp * 2);
   creep.value = Math.floor(creep.value * 1.5);
@@ -593,7 +564,6 @@ var StrongMixin = function(creep) {
 
 var QuickMixin = function(creep) {
   creep.creep_type = "Quick " + creep.creep_type;
-  creep.color = color(200,150,50);
   creep.speed = creep.speed * 1.5;
   creep.hp = Math.floor(creep.hp * .75);
   creep.size = creep.size * 0.9;
@@ -603,7 +573,6 @@ var QuickMixin = function(creep) {
 
 var BossMixin = function(creep) {
   creep.creep_type = "Boss " + creep.creep_type;
-  creep.color = color(255,100,150);
   creep.size = creep.size * 1.5;
   creep.hp = Math.floor(creep.hp * 10);
   creep.value = Math.floor(creep.value * 20);
@@ -617,7 +586,6 @@ var Creep = function(SET, wave) {
 
   c.x = SET.entrance.x_mid;
   c.y = SET.entrance.y_mid;
-  c.color = SET.creep_color;
   c.size = SET.creep_size;
   c.hp = Math.floor(SET.creep_hp * Math.pow(1.4,wave));
   c.value = SET.creep_value + wave;
@@ -684,16 +652,9 @@ var Creep = function(SET, wave) {
     }
   }
   c.draw = function() {
-    noStroke();
-    fill(this.color);
-    ellipse(this.x,this.y,this.size,this.size);
   }
   c.creep_type = "Normal Creep";
   c.display_stats = function() {
-    WIDGETS.creep_type.innerHTML = this.creep_type;
-    WIDGETS.creep_hp.innerHTML = this.hp;
-    WIDGETS.creep_value.innerHTML = this.value + " gold";
-    WIDGETS.creep.style.display = "block";
   }
   SET.creeps_spawned++;
   assign_to_depth(SET, c, SET.creep_render_level);
@@ -823,7 +784,6 @@ var CreepWaveController = function(SET) {
   cwc.last = SET.now-20000;
   cwc.wave = 1;
   cwc.spawn_wave = function(bonus) {
-    WIDGETS.wave.innerHTML = this.wave;
     var settings = {wave:this.wave, bonus:bonus};
     var mixins = [];
 
@@ -914,8 +874,7 @@ var create_creep_wave_with_mixins = function(SET, settings, mixins) {
 /* File to contain Terrain implementation.  */
 
 var NeutralTerrain = function(SET,gx,gy) {
-  var terrain_color = color(200,200,200);
-  var t = Square(SET,gx,gy,terrain_color);
+  var t = Square(SET,gx,gy,null);
   t.type = "neutral";
   t.tower_range_modifier = 1.0;
   t.tower_damage_modifier = 1.0;
@@ -925,14 +884,12 @@ var NeutralTerrain = function(SET,gx,gy) {
 
 var WaterTerrain = function(SET,gx,gy) {
   var t = NeutralTerrain(SET,gx,gy);
-  t.color = color(78,150,236);
   t.type = "water";
   return t;
 }
   
 var MountainTerrain = function(SET,gx,gy) {
   var t = NeutralTerrain(SET,gx,gy);
-  t.color = color(228,51,51);
   t.type = "mountain";
   t.tower_range_modifier = 1.25;
   return t;
@@ -940,7 +897,6 @@ var MountainTerrain = function(SET,gx,gy) {
 
 var PowerPlantTerrain = function(SET,gx,gy) {
   var t = NeutralTerrain(SET,gx,gy);
-  t.color = color(189,194,78);
   t.type = "power plant";
   t.tower_damage_modifier = 2.0;
   return t;
@@ -1103,17 +1059,6 @@ var BuildTowerMode = function(SET) {
     return cache["valid_tower_location"];
   };
   this.draw = function(x,y) {
-    var gpos = pixel_to_grid(SET,x,y);
-    var mid = center_of_square(SET,gpos);
-    var radius = SET.half_pixels_per_square;
-    if (this.br)
-      this.br.is_dead = function() { return true; }
-    this.br = BuildRadius(SET,mid.x,mid.y,radius);
-    if (this.is_legal(x,y))
-      this.br.color = SET.bg_colors.positive;
-    else
-      this.br.color = SET.bg_colors.negative;
-
   };
   this.set_up = function(x,y) {
     this.draw(x,y);
@@ -1211,11 +1156,9 @@ var TowerSelectMode = function(SET) {
       this.killzone = KillZone(SET,this.tower.x_mid,
       this.tower.y_mid,
       this.tower.range*SET.pixels_per_square);
-      WIDGETS.tower.style.display = "block";
     }
   };
   this.tear_down = function() {
-    WIDGETS.tower.style.display = "none";
     if (this.killzone)
       this.killzone.is_dead = function() { return true; };
   };
@@ -1239,12 +1182,10 @@ var CreepSelectMode = function(SET) {
     this.creep = get_creep_nearest(SET,x,y);
     if (this.creep) {
       this.creep.display_stats();
-      WIDGETS.creep.style.display = "block";
       this.hp_updater = CreepHpUpdater(SET, this.creep);
     }
   };
   this.tear_down = function() {
-    WIDGETS.creep.style.display = "none";
     if (this.hp_updater) {
       this.hp_updater.should_die = true;
     }
@@ -1265,8 +1206,6 @@ var AimBombMode = function(SET) {
   this.cost = SET.bomb_cost;
   this.radius = SET.missile_blast_radius * SET.pixels_per_square * 1.0;
   this.draw = function(x,y) {
-    if (this.mr) this.mr.is_dead = function() { return true; };
-    this.mr = MissileRadius(SET,x,y,this.radius);
   }
   this.set_up = function(x,y) {
     this.draw(x,y);
@@ -1296,7 +1235,6 @@ var AimBombMode = function(SET) {
     var cost_increase = SET.bomb_cost * 0.25;
     if (cost_increase < 25) cost_increase = 25;
     SET.bomb_cost = Math.floor(SET.bomb_cost + cost_increase);
-    WIDGETS.bomb_cost.innerHTML = SET.bomb_cost;
   }
 }
 AimBombMode.prototype = new UserInterfaceMode();
@@ -1436,16 +1374,10 @@ var center_of_square = function(SET,gx,gy) {
 
 // draw a square filling square (gx,gy)
 var draw_square_in_grid = function(SET,gx,gy) {
-  var pos = grid_to_pixel(SET,gx,gy);
-  rect(pos.x,pos.y,SET.pixels_per_square,SET.pixels_per_square);
 }
 
 // draw a circle filling (gx,gy)
 var draw_circle_in_grid = function(SET,gx,gy) {
-  var pos = grid_to_pixel(SET,gx,gy);
-  var h = SET.half_pixels_per_square;
-  var l = SET.pixels_per_square;
-  ellipse(pos.x+h,pos.y+h,l-1,l-1);
 };
 
 /*
@@ -1603,11 +1535,7 @@ var CircleZone = function(SET,x,y,r) {
   var cz = new Object();
   Object.extend(cz, InertDrawable);
   var d = 2*r;
-  cz.color = SET.killzone_color;
   cz.draw = function() {
-    fill(this.color);
-    stroke(255);
-    ellipse(x,y,d,d);
   };
   return cz
 }
@@ -1626,7 +1554,6 @@ var BuildRadius = function(SET,x,y,r) {
 
 var MissileRadius = function(SET,x,y,r) {
   var mr = KillZone(SET,x,y,r);
-  mr.color = color(0, 40,40,0.5);
   return mr;
 }
 
@@ -1692,33 +1619,15 @@ var Tower = function(SET,settings) {
     unselect(SET);
   }
   tower.display_stats = function() {
-    WIDGETS.tower_type.innerHTML = this.type;
-    WIDGETS.tower_range.innerHTML = this.range;
-    WIDGETS.tower_damage.innerHTML = this.damage;
-    WIDGETS.tower_rate.innerHTML = this.reload_rate;
-    WIDGETS.tower_sell_button.innerHTML = "Sell tower for " + Math.floor(this.sale_value * 0.75) + " gold!";
-    WIDGETS.tower_upgrade_button.innerHTML = "<u>U</u>pgrade for " + Math.floor(this.upgrade_cost) + " gold!";
-
-    WIDGETS.tower_upgrade_button.onclick = function() {
-      tower.upgrade();
-    }
-    WIDGETS.tower_sell_button.onclick = function() {
-      tower.sell();
-      reset_pathfinding();
-    }
-    WIDGETS.tower.style.display = "block";
   };
   tower.draw = function() {
-    noStroke();
-    fill(this.color);
-    draw_circle_in_grid(SET,this.gx,this.gy);
   }
   assign_to_depth(SET, tower, SET.tower_render_level);
   return tower;
 };
 
 var MissileTower = function(SET,gx,gy) {
-  var mt = Tower(SET, {gx:gx,gy:gy,color:color(250,150,50)});
+  var mt = Tower(SET, {gx:gx,gy:gy});
   mt.type = "Missile Tower";
   mt.damage = 5000;
   mt.upgrade_cost = 100;
@@ -1747,7 +1656,7 @@ var MissileTower = function(SET,gx,gy) {
 }
 
 var LaserTower = function(SET,gx,gy) {
-  var lt = Tower(SET,{gx:gx,gy:gy,color:color(90,150,50)});
+  var lt = Tower(SET,{gx:gx,gy:gy});
   lt.type = "Laser Tower";
   lt.attack = function(creep) {
     assign_to_depth(SET,Laser(SET,this,creep),SET.bullet_render_level);
@@ -1777,7 +1686,7 @@ var LaserTower = function(SET,gx,gy) {
 };
 
 var CannonTower = function(SET,gx,gy) {
-  var lt = Tower(SET,{gx:gx,gy:gy,color:color(100,120,140)});
+  var lt = Tower(SET,{gx:gx,gy:gy});
   lt.type = "Cannon Tower";
   lt.attack = function(creep) {
     assign_to_depth(SET,CannonBall(SET,this,{x:creep.x, y:creep.y, hp:1}),SET.bullet_render_level);
@@ -1807,7 +1716,7 @@ var CannonTower = function(SET,gx,gy) {
 };
 
 var GatlingTower = function(SET,gx,gy) {
-  var gt = Tower(SET,{gx:gx,gy:gy,color:color(250,250,50)});
+  var gt = Tower(SET,{gx:gx,gy:gy});
   gt.type = "Gatling Tower";
   gt.damage = 50;
   gt.upgrade_cost = 25;
@@ -1897,15 +1806,10 @@ var Bullet = function(SET, tower, target) {
   var b = new Object();
   Object.extend(b, Weapon(SET,tower,target));
   b.size = 5;
-  b.color = color(255,255,255);
-  b.fill_color = color(100,255,0);
   b.speed = 8;
   b.damage = tower.damage;
   b.proximity = 10;
   b.draw = function() {
-    stroke(b.color);
-    fill(b.fill_color);
-    ellipse(this.x,this.y,this.size,this.size);
   }
   return b;
 }
@@ -1917,19 +1821,11 @@ var CannonBall = function(SET, tower, target) {
   c.middist = dist(c.x, c.y, c.midpoint.x, c.midpoint.y);
   c.min_size = 8
   c.size_variance = 4;
-  c.color = color(0,0,0);
-  c.fill_color = color(50,50,50);
   c.speed = 8;
   c.damage = tower.damage;
   c.proximity = 25;
   c.splash_range = 50.0;
   c.draw = function() {
-    var percent_to_apex = ((this.middist - dist(this.x, this.y, this.midpoint.x, this.midpoint.y)) / this.middist);
-    size = ((1 - Math.pow(1 - percent_to_apex, 2)) * this.size_variance) + this.min_size;
-    log("drawing cannonball", size);
-    stroke(this.color);
-    fill(this.fill_color);
-    ellipse(this.x,this.y,size,size);
   };
   c.impact = function(target) {
     this.is_dead = function() { return true; };
@@ -1952,8 +1848,6 @@ var Missile = function(SET,tower,target) {
   var m = new Object();
   Object.extend(m, Weapon(SET,tower,target));
   m.size = 10;
-  m.color = color(255,0,0);
-  m.fill_color = color(250,50,50);
   m.speed = 8;
   m.damage = tower.damage;
   m.proximity = 20;
@@ -1967,18 +1861,6 @@ var Missile = function(SET,tower,target) {
   }
 
   m.draw = function() {
-    stroke(m.color);
-    fill(m.fill_color);
-    var mx = this.x;
-    var my = this.y;
-    var size = this.size;
-    var tx = this.target.x;
-    var ty = this.target.y;
-    var tth = Math.atan((ty-my)/(tx-mx));
-    var angle = 2.35619449; // 135 degrees in radians
-    triangle(mx,my,
-            mx+size * Math.cos(tth - 2.35619449), my+size * Math.sin(tth + 2.35619449),
-            mx+size * Math.cos(tth + 2.35619449), my+size * Math.sin(tth - 2.35619449));
   }
   return m;
 };
@@ -1987,13 +1869,9 @@ var Laser = function(SET,tower,target) {
   var l = new Object();
   Object.extend(l, Weapon(SET,tower,target));
   l.tail = 20; // length of laser's graphic
-  l.color = color(0,0,255);
   l.speed = 10;
   l.proximity = 10;
   l.draw = function() {
-    var path = calc_path(l.x,l.y,tower.x_mid,tower.y_mid,l.tail);
-    stroke(l.color);
-    line(l.x,l.y,l.x+path.x,l.y+path.y);
   }
   return l;
 };

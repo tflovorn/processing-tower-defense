@@ -122,7 +122,7 @@ var Game = function (id, token) {
     nowjs.getClient(game.clients[1], function () {
       this.now.startGame(sets[1], sets[0]);
     });
-    var intervalId = setInterval(game.syncSets, 200.0);
+    var intervalId = setInterval(game.syncClients, 200.0);
     // TODO clearInterval(intervalId) when game is done
   };
 
