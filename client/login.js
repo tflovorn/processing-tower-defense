@@ -37,3 +37,15 @@ now.receiveLoginInfo = function (ok, authToken, lobbyPath) {
   // Move the client to the lobby page.
   window.location = "http://" + host + "/lobby.html";
 };
+
+// Action initiated by clicking the register button.
+var doRegister = function (form) {
+  var login = form.login.value;
+  var pass = form.pass.value;
+  if (pass !== form.passConfirm.value) {
+    return;
+  }
+  now.ready(function () {
+    now.registerNewUser(login, pass);
+  });
+};

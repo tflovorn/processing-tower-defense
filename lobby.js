@@ -162,6 +162,13 @@ everyone.now.authenticate = function (login, pass) {
   });
 };
 
+everyone.now.registerNewUser = function (login, pass) {
+  // TODO registration
+
+  // if registration was ok, move user along
+  this.now.authenticate(login, pass);
+};
+
 // --- Lobby management ---
 // Client enters lobby, carrying an auth object from the login server.
 everyone.now.register = function (authToken) {

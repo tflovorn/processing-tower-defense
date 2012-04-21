@@ -34,10 +34,10 @@ var Database = function (host, user, password, database) {
 // TODO: create database setup script (commented due to no db to test on)
 // TODO: get rid of hard-coded Database parameters.
 
-// var db = Database("localhost", "dbUser", "dbPass", "ptdef");
-// process.on('exit', function () {
-//   db.close();
-// });
+//var db = Database("198.180.134.107", "tim", "lovorn", "jowtim_database");
+//process.on('exit', function () {
+//  db.close();
+//});
 
 io = io.listen(dbFrontPort);
 
@@ -65,6 +65,15 @@ io.sockets.on('connection', function (socket) {
     socket.emit("response", {ok: ok, username: username});
   });
 
+  // Create a user with the given name and password.
+  socket.on("create user", function (loginData) {
+    var login = loginData["login"];
+    var pass = loginData["pass"];
+    var ok = true;
+    // user ok
+    socket.emit("response", {ok: ok});
+  });
+
   // Report the outcome of a game. Increment winner's win-count by 1; increment
   // loser's lose-count by 1.
   // TODO: (winner, loser) could be names or auth tokens. Decide which.
@@ -88,9 +97,19 @@ io.sockets.on('connection', function (socket) {
   // May want to implement persisting a game.
   // TODO: what parts of the game are relevant?
   socket.on("game persist", function (gameData) {
-    var ok = true;
-    var gameId = "A";
+    var gameToken = gameData["gameToken"];
+    var state = gameData["state"];
 
-    socket.emit("response", {ok: ok, gameId: gameId});
+    var ok = true;
+
+    socket.emit("response", {ok: ok});
+  });
+
+  // Recover a game that has been persisted.
+  socket.on("game recover", function (gameToken) {
+    var ok = true;
+    var state = {};
+
+    socket.emit("response", {ok: ok, state: state});
   });
 });
