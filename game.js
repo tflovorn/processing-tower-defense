@@ -117,13 +117,13 @@ var Game = function (id, token) {
     game.buildTower = hooks["buildTower"];
     game.startWave = hooks["startWave"];
     var sets = game.checkSets();
-    sets[0] = cycle.decycle(sets[0]);
-    sets[1] = cycle.decycle(sets[1]);
+    var set0 = cycle.decycle(sets[0]);
+    var set1 = cycle.decycle(sets[1]);
     nowjs.getClient(game.clients[0], function () {
-      this.now.startGame(sets[0], sets[1]);
+      this.now.startGame(set0, set1);
     });
     nowjs.getClient(game.clients[1], function () {
-      this.now.startGame(sets[1], sets[0]);
+      this.now.startGame(set1, set0);
     });
     var intervalId = setInterval(game.syncClients, 200.0);
     // TODO clearInterval(intervalId) when game is done
@@ -135,13 +135,13 @@ var Game = function (id, token) {
       return;
     }
     var sets = game.checkSets();
-    sets[0] = cycle.decycle(sets[0]);
-    sets[1] = cycle.decycle(sets[1]);
+    var set0 = cycle.decycle(sets[0]);
+    var set1 = cycle.decycle(sets[1]);
     nowjs.getClient(game.clients[0], function () {
-      this.now.syncSets(sets[0], sets[1]);
+      this.now.syncSets(set0, set1);
     });
     nowjs.getClient(game.clients[1], function () {
-      this.now.syncSets(sets[1], sets[0]);
+      this.now.syncSets(set1, set0);
     });
   };
 

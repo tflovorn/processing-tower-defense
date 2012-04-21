@@ -62,6 +62,9 @@ var assign_to_depth = function(SET, obj,depth) {
 // updates any groups
 var update_groups = function(groups) {
   var obj_update = function(x) {
+    if (x.update === undefined) {
+      console.log("update undefined on " + x.objtype);
+    }
     if (x != undefined && x.update !== undefined) x.update();
   };
   var obj_is_alive = function(x) {
@@ -227,6 +230,7 @@ Object.extend(InertDrawable, {
 var SettingUpdater = function(SET) {
   var su = new Object();
   Object.extend(su, InertDrawable);
+  su.objtype = "SettingUpdater";
   su.update = function() {
     SET.frame += 1;
     if (SET.fastforward) {
@@ -245,7 +249,7 @@ var SettingUpdater = function(SET) {
 var UIUpdater = function(SET) {
   var uiu = new Object();
   Object.extend(uiu, InertDrawable);
-
+  uiu.objtype = "UIUpdater";
   uiu.update = function() {
   };
   assign_to_depth(SET, uiu, SET.system_render_level);
@@ -256,6 +260,7 @@ var UIUpdater = function(SET) {
 var Grid = function(SET) {
   var grid = new Object();
   Object.extend(grid, InertDrawable);
+  grid.objtype = "Grid";
   grid.draw = function() {
   };
   assign_to_depth(SET, grid, SET.grid_render_level);
@@ -266,6 +271,7 @@ var Grid = function(SET) {
 var GridSquare = function(SET,gx,gy,color) {
   var square = new Object();
   Object.extend(square, InertDrawable);
+  square.objtype = "GridSquare";
   square.gx = gx;
   square.gy = gy;
   square.x = grid_to_pixel(SET,gx);
@@ -278,6 +284,7 @@ var GridSquare = function(SET,gx,gy,color) {
 
 var Square = function(SET,gx,gy,color) {
   var square = GridSquare(SET,gx,gy,color);
+  square.objtype = "Square";
   square.color = color;
   square.draw = function() {
   }
@@ -286,6 +293,7 @@ var Square = function(SET,gx,gy,color) {
 };
 var ExitSquare = function(SET,gx,gy) {
   var square = Square(SET,gx,gy,SET.exit_color);
+  square.objtype = "ExitSquare";
   square.type = "exit";
   square.draw = function() {
   }
@@ -455,6 +463,7 @@ exports.start_tower_defense = start_tower_defense;
 var CreepHpUpdater = function(SET, creep) {
   var chp = new Object();
   Object.extend(chp, InertDrawable);
+  chp.objtype = "CreepHpUpdater";
   chp.update = function() {
   }
   chp.should_die = false;
@@ -584,6 +593,7 @@ var BossMixin = function(creep) {
 var Creep = function(SET, wave) {
   var cp = SET.creeps_spawned;
   var c = new Object();
+  c.objtype = "Creep";
   c.terrain = {"entrance":1.0,"exit":1.0,"mountain":0.75,"water":0.5,"neutral":1.0,"power plant":2.0};
 
   c.x = SET.entrance.x_mid;
@@ -782,6 +792,7 @@ var pathfind = function(SET, start_block) {
 var CreepWaveController = function(SET) {
   var cwc = new Object();
   Object.extend(cwc, InertDrawable);
+  cwc.objtype = "CreepWaveController";
   cwc.delay = 25000;
   cwc.last = SET.now-20000;
   cwc.wave = 1;
@@ -827,6 +838,7 @@ var CreepWaveController = function(SET) {
 var CreepWave = function(SET, settings) {
   var cw = new Object();
   Object.extend(cw, InertDrawable);
+  cw.objtype = "CreepWave";
   cw.remaining = 20;
   cw.wave = 1;
   cw.last = 0;
@@ -1536,6 +1548,7 @@ function loadPageVar (sVar) {
 var CircleZone = function(SET,x,y,r) {
   var cz = new Object();
   Object.extend(cz, InertDrawable);
+  cz.objtype = "CircleZone";
   var d = 2*r;
   cz.draw = function() {
   };
@@ -1562,6 +1575,7 @@ var MissileRadius = function(SET,x,y,r) {
 var Tower = function(SET,settings) {
   var tower = GridSquare(SET,settings.gx,settings.gy,settings.color);
   Object.extend(tower, settings);
+  tower.objtype = "Tower";
   // note, range is in terms of grid squares
   // and is calculated from center of tower
   tower.set_range = function(range) {
@@ -1630,6 +1644,7 @@ var Tower = function(SET,settings) {
 
 var MissileTower = function(SET,gx,gy) {
   var mt = Tower(SET, {gx:gx,gy:gy});
+  mt.objtype = "MissileTower";
   mt.type = "Missile Tower";
   mt.damage = 5000;
   mt.upgrade_cost = 100;
@@ -1659,6 +1674,7 @@ var MissileTower = function(SET,gx,gy) {
 
 var LaserTower = function(SET,gx,gy) {
   var lt = Tower(SET,{gx:gx,gy:gy});
+  lt.objtype = "LaserTower";
   lt.type = "Laser Tower";
   lt.attack = function(creep) {
     assign_to_depth(SET,Laser(SET,this,creep),SET.bullet_render_level);
@@ -1689,6 +1705,7 @@ var LaserTower = function(SET,gx,gy) {
 
 var CannonTower = function(SET,gx,gy) {
   var lt = Tower(SET,{gx:gx,gy:gy});
+  lt.objtype = "CannonTower";
   lt.type = "Cannon Tower";
   lt.attack = function(creep) {
     assign_to_depth(SET,CannonBall(SET,this,{x:creep.x, y:creep.y, hp:1}),SET.bullet_render_level);
@@ -1719,6 +1736,7 @@ var CannonTower = function(SET,gx,gy) {
 
 var GatlingTower = function(SET,gx,gy) {
   var gt = Tower(SET,{gx:gx,gy:gy});
+  gt.objtype = "GatlingTower";
   gt.type = "Gatling Tower";
   gt.damage = 50;
   gt.upgrade_cost = 25;
@@ -1774,6 +1792,7 @@ var GatlingTower = function(SET,gx,gy) {
 
 var Weapon = function(SET,tower,target) {
   var w = new Object();
+  w.objtype = "Weapon";
   w.x = tower.x_mid;
   w.y = tower.y_mid;
   w.target = target;
@@ -1807,6 +1826,7 @@ var Weapon = function(SET,tower,target) {
 var Bullet = function(SET, tower, target) {
   var b = new Object();
   Object.extend(b, Weapon(SET,tower,target));
+  b.objtype = "Bullet";
   b.size = 5;
   b.speed = 8;
   b.damage = tower.damage;
@@ -1819,6 +1839,7 @@ var Bullet = function(SET, tower, target) {
 var CannonBall = function(SET, tower, target) {
   var c = new Object();
   Object.extend(c, Weapon(SET,tower,target));
+  c.objtype = "CannonBall";
   c.midpoint = {x:Math.floor((c.x + target.x)/2.0), y:Math.floor((c.y + target.y) / 2.0)};
   c.middist = dist(c.x, c.y, c.midpoint.x, c.midpoint.y);
   c.min_size = 8
@@ -1849,6 +1870,7 @@ var CannonBall = function(SET, tower, target) {
 var Missile = function(SET,tower,target) {
   var m = new Object();
   Object.extend(m, Weapon(SET,tower,target));
+  m.objtype = "Missile";
   m.size = 10;
   m.speed = 8;
   m.damage = tower.damage;
@@ -1870,6 +1892,7 @@ var Missile = function(SET,tower,target) {
 var Laser = function(SET,tower,target) {
   var l = new Object();
   Object.extend(l, Weapon(SET,tower,target));
+  l.objtype = "Laser";
   l.tail = 20; // length of laser's graphic
   l.speed = 10;
   l.proximity = 10;
