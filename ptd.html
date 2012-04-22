@@ -167,6 +167,12 @@
     a better, faster initial render. -->
 <!-- now.js: this will need a template for non-localhost URL -->
 <script src="/nowjs/now.js"></script>
+<!-- global needs to be defined before importing game scripts -->
+<script type="text/javascript" charset="utf-8">
+    // imbueWithFunctions[objtype](obj, SET) will fill obj with the functions
+    // it needs.
+    var imbueWithFunctions = {};
+</script>
 <!-- original scripts -->
 <script src="processing.js" type="text/javascript" charset="utf-8" ></script>
 <script src="jsfprocessing.js" type="text/javascript" charset="utf-8" ></script>
@@ -187,7 +193,6 @@
     $(document).ready(function() {
         start_tower_defense();
     })
-    
     
     /* Hotkeys! */
     special_keys = {

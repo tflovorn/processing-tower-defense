@@ -1,15 +1,21 @@
 var CircleZone = function(SET,x,y,r) {
   var cz = new Object();
-  Object.extend(cz, InertDrawable);
-  var d = 2*r;
+  cz.objtype = "CircleZone";
+  imbueWithFunctions[cz.objtype](cz, SET);
+  cz.x = x;
+  cz.y = y;
+  cz.d = 2*r;
   cz.color = SET.killzone_color;
+  return cz
+}
+imbueWithFunctions["CircleZone"] = function (cz, SET) {
+  Object.extend(cz, InertDrawable);
   cz.draw = function() {
     fill(this.color);
     stroke(255);
-    ellipse(x,y,d,d);
+    ellipse(cz.x,cz.y,cz.d,cz.d);
   };
-  return cz
-}
+};
 
 var KillZone = function(SET,x,y,r) {
   var kz = new CircleZone(SET,x,y,r);
@@ -32,6 +38,21 @@ var MissileRadius = function(SET,x,y,r) {
 var Tower = function(SET,settings) {
   var tower = GridSquare(SET,settings.gx,settings.gy,settings.color);
   Object.extend(tower, settings);
+  tower.objtype = "Tower";
+  imbueWithFunctions[tower.objtype](tower, SET);
+  tower.set_range(3.5);
+  tower.damage = 5.0;
+  var mid = center_of_square(SET,tower.gx,tower.gy);
+  tower.x_mid = mid.x;
+  tower.y_mid = mid.y;
+  tower.fired_at = 0;
+  tower.reload_rate = 1000;
+  tower.sale_value = 50;
+  assign_to_depth(SET, tower, SET.tower_render_level);
+  return tower;
+};
+imbueWithFunctions["Tower"] = function (tower, SET) {
+  imbueWithFunctions["GridSquare"](tower, SET);
   // note, range is in terms of grid squares
   // and is calculated from center of tower
   tower.set_range = function(range) {
@@ -44,14 +65,6 @@ var Tower = function(SET,settings) {
     this.set_range(this.range * terrain.tower_range_modifier);
     this.reload_rate = this.reload_rate * terrain.tower_frequency_modifier;
   };
-  tower.set_range(3.5);
-  tower.damage = 5.0;
-  tower.attack = function(creep) {};
-  var mid = center_of_square(SET,tower.gx,tower.gy);
-  tower.x_mid = mid.x;
-  tower.y_mid = mid.y;
-  tower.fired_at = 0;
-  tower.reload_rate = 1000;
   tower.weapon_ready = function() {
     if (SET.now - tower.fired_at > tower.reload_rate) {
       tower.fired_at = SET.now;
@@ -59,6 +72,7 @@ var Tower = function(SET,settings) {
     }
     return false;
   };
+  tower.attack = function(creep) {};
   tower.update = function() {
     var creeps = SET.rendering_groups[SET.creep_render_level];
     if (creeps.length == 0) return;
@@ -82,7 +96,6 @@ var Tower = function(SET,settings) {
     if (closest_creep && tower.weapon_ready() == true)
       tower.attack(closest_creep);
   }
-  tower.sale_value = 50;
   tower.sell = function() {
     SET.gold += Math.floor(this.sale_value * 0.75);
     this.is_dead = function() { return true; };
@@ -112,18 +125,23 @@ var Tower = function(SET,settings) {
     fill(this.color);
     draw_circle_in_grid(SET,this.gx,this.gy);
   }
-  assign_to_depth(SET, tower, SET.tower_render_level);
-  return tower;
+
 };
 
 var MissileTower = function(SET,gx,gy) {
   var mt = Tower(SET, {gx:gx,gy:gy,color:color(250,150,50)});
+  mt.objtype = "MissileTower";
   mt.type = "Missile Tower";
   mt.damage = 5000;
   mt.upgrade_cost = 100;
   mt.sale_value = 100;
   mt.set_range(5.5);
   mt.reload_rate = 2000;
+  mt.account_for_terrain();
+  return mt;
+}
+imbueWithFunctions["MissileTower"] = function (mt, SET) {
+  imbueWithFunctions["Tower"](mt, SET);
   mt.attack = function(creep) {
     assign_to_depth(SET, Missile(SET,this,creep),SET.bullet_render_level);
   }
@@ -141,48 +159,25 @@ var MissileTower = function(SET,gx,gy) {
     }
     else error("You don't have enough gold to upgrade, you need " + (this.upgrade_cost - SET.gold) + " more.");
   }
-  mt.account_for_terrain();
-  return mt;
-}
+};
 
 var LaserTower = function(SET,gx,gy) {
   var lt = Tower(SET,{gx:gx,gy:gy,color:color(90,150,50)});
+  lt.objtype = "LaserTower";
   lt.type = "Laser Tower";
-  lt.attack = function(creep) {
-    assign_to_depth(SET,Laser(SET,this,creep),SET.bullet_render_level);
-  };
   lt.upgrade_cost = 25;
   lt.sale_value = 13;
-  lt.upgrade = function() {
-    if (SET.gold >= this.upgrade_cost) {
-      SET.gold -= this.upgrade_cost;
-      this.sale_value = Math.floor(this.sale_value + this.upgrade_cost);
-      this.upgrade_cost = Math.floor(this.upgrade_cost * 1.5);
-      this.damage = Math.floor(this.damage * 2.0);
-      this.set_range(this.range + 0.25);
-      this.reload_rate = this.reload_rate - 10;
-
-      unselect(SET);
-      SET.state = new TowerSelectMode(SET);
-      SET.state.set_up(this.x_mid,this.y_mid);
-    }
-    else error("You don't have enough gold to upgrade, you need " + (this.upgrade_cost - SET.gold) + " more.");
-  }
   lt.damage = 10;
   lt.set_range(4);
   lt.reload_rate = 250;
   lt.account_for_terrain();
   return lt;
 };
-
-var CannonTower = function(SET,gx,gy) {
-  var lt = Tower(SET,{gx:gx,gy:gy,color:color(100,120,140)});
-  lt.type = "Cannon Tower";
+imbueWithFunctions["LaserTower"] = function (lt, SET) {
+  imbueWithFunctions["Tower"](lt, SET);
   lt.attack = function(creep) {
-    assign_to_depth(SET,CannonBall(SET,this,{x:creep.x, y:creep.y, hp:1}),SET.bullet_render_level);
+    assign_to_depth(SET,Laser(SET,this,creep),SET.bullet_render_level);
   };
-  lt.upgrade_cost = 75;
-  lt.sale_value = 50;
   lt.upgrade = function() {
     if (SET.gold >= this.upgrade_cost) {
       SET.gold -= this.upgrade_cost;
@@ -198,15 +193,47 @@ var CannonTower = function(SET,gx,gy) {
     }
     else error("You don't have enough gold to upgrade, you need " + (this.upgrade_cost - SET.gold) + " more.");
   }
+};
+
+var CannonTower = function(SET,gx,gy) {
+  var lt = Tower(SET,{gx:gx,gy:gy,color:color(100,120,140)});
+  lt.objtype = "CannonTower";
+  imbueWithFunctions[lt.objtype](lt, SET);
+  lt.type = "Cannon Tower";
+  lt.upgrade_cost = 75;
+  lt.sale_value = 50;
   lt.damage = 100;
   lt.set_range(4);
   lt.reload_rate = 1000;
   lt.account_for_terrain();
   return lt;
 };
+imbueWithFunctions["CannonTower"] = function (lt, SET) {
+  imbueWithFunctions["Tower"](lt, SET);
+  lt.attack = function(creep) {
+    assign_to_depth(SET,CannonBall(SET,this,{x:creep.x, y:creep.y, hp:1}),SET.bullet_render_level);
+  };
+  lt.upgrade = function() {
+    if (SET.gold >= this.upgrade_cost) {
+      SET.gold -= this.upgrade_cost;
+      this.sale_value = Math.floor(this.sale_value + this.upgrade_cost);
+      this.upgrade_cost = Math.floor(this.upgrade_cost * 1.5);
+      this.damage = Math.floor(this.damage * 2.0);
+      this.set_range(this.range + 0.25);
+      this.reload_rate = this.reload_rate - 10;
+
+      unselect(SET);
+      SET.state = new TowerSelectMode(SET);
+      SET.state.set_up(this.x_mid,this.y_mid);
+    }
+    else error("You don't have enough gold to upgrade, you need " + (this.upgrade_cost - SET.gold) + " more.");
+  }
+};
 
 var GatlingTower = function(SET,gx,gy) {
   var gt = Tower(SET,{gx:gx,gy:gy,color:color(250,250,50)});
+  gt.objtype = "GatlingTower";
+  imbueWithFunctions[gt.objtype](gt, SET);
   gt.type = "Gatling Tower";
   gt.damage = 50;
   gt.upgrade_cost = 25;
@@ -221,6 +248,11 @@ var GatlingTower = function(SET,gx,gy) {
   gt.reloading = false;
   gt.fire_next_at = 0;
 
+  gt.account_for_terrain();
+  return gt;
+}
+imbueWithFunctions["GatlingTower"] = function (gt, SET) {
+  imbueWithFunctions["Tower"](gt, SET);
   gt.weapon_ready = function() {
     if (gt.reloading && gt.finish_reload_at < SET.now) {
       gt.shots_left_in_volley = gt.shots_per_volley;
@@ -231,7 +263,6 @@ var GatlingTower = function(SET,gx,gy) {
     }
     return false;
   };
-
   gt.attack = function(creep) {
     assign_to_depth(SET,Bullet(SET,this,creep),SET.bullet_render_level);
     gt.shots_left_in_volley--;
@@ -256,12 +287,11 @@ var GatlingTower = function(SET,gx,gy) {
     }
     else error("You don't have enough gold to upgrade, you need " + (this.upgrade_cost - SET.gold) + " more.");
   }
-  gt.account_for_terrain();
-  return gt;
-}
+};
 
 var Weapon = function(SET,tower,target) {
   var w = new Object();
+  w.objtype = "Weapon";
   w.x = tower.x_mid;
   w.y = tower.y_mid;
   w.target = target;
@@ -269,6 +299,9 @@ var Weapon = function(SET,tower,target) {
   w.proximity = 7;
   w.damage = tower.damage;
   w.last = SET.now;
+  return w;
+};
+imbueWithFunctions["Weapon"] = function (w, SET) {
   w.impact = function(target) {
     this.is_dead = function() { return true; };
     target.hp -= this.damage;
@@ -282,36 +315,43 @@ var Weapon = function(SET,tower,target) {
       var elapsed = 1.0 * (SET.now - this.last);
       var speed = this.speed * (elapsed/1000);
       this.last = SET.now;
-      move_towards(SET, this, this.x,this.y,target.x,target.y,this.speed);
+      move_towards(SET, this, this.x,this.y,this.target.x,this.target.y,this.speed);
     }
   }
   w.is_dead = function() {
-    if (!target || target.hp <= 0) return true;
+    if (!this.target || this.target.hp <= 0) return true;
     return false;
   };
-  return w;
+
 };
 
 var Bullet = function(SET, tower, target) {
   var b = new Object();
   Object.extend(b, Weapon(SET,tower,target));
+  b.objtype = "Bullet";
+  imbueWithFunctions[b.objtype](b, SET);
   b.size = 5;
   b.color = color(255,255,255);
   b.fill_color = color(100,255,0);
   b.speed = 8;
   b.damage = tower.damage;
   b.proximity = 10;
+  return b;
+}
+imbueWithFunctions["Bullet"] = function (b, SET) {
+  imbueWithFunctions["Weapon"](b, SET);
   b.draw = function() {
     stroke(b.color);
     fill(b.fill_color);
     ellipse(this.x,this.y,this.size,this.size);
   }
-  return b;
-}
+};
 
 var CannonBall = function(SET, tower, target) {
   var c = new Object();
   Object.extend(c, Weapon(SET,tower,target));
+  c.objtype = "CannonBall";
+  imbueWithFunctions[c.objtype](c, SET);
   c.midpoint = {x:Math.floor((c.x + target.x)/2.0), y:Math.floor((c.y + target.y) / 2.0)};
   c.middist = dist(c.x, c.y, c.midpoint.x, c.midpoint.y);
   c.min_size = 8
@@ -322,6 +362,11 @@ var CannonBall = function(SET, tower, target) {
   c.damage = tower.damage;
   c.proximity = 25;
   c.splash_range = 50.0;
+
+  return c;
+};
+imbueWithFunctions["CannonBall"] = function (c, SET) {
+  imbueWithFunctions["Weapon"](c, SET);
   c.draw = function() {
     var percent_to_apex = ((this.middist - dist(this.x, this.y, this.midpoint.x, this.midpoint.y)) / this.middist);
     size = ((1 - Math.pow(1 - percent_to_apex, 2)) * this.size_variance) + this.min_size;
@@ -343,19 +388,23 @@ var CannonBall = function(SET, tower, target) {
       }
     }
   };
-
-  return c;
 };
 
 var Missile = function(SET,tower,target) {
   var m = new Object();
   Object.extend(m, Weapon(SET,tower,target));
+  m.objtype = "Missile";
+  imbueWithFunctions[m.objtype](m, SET);
   m.size = 10;
   m.color = color(255,0,0);
   m.fill_color = color(250,50,50);
   m.speed = 8;
   m.damage = tower.damage;
   m.proximity = 20;
+  return m;
+};
+imbueWithFunctions["Missile"] = function (m, SET) {
+  imbueWithFunctions["Weapon"](m, SET);
   m.is_dead = function() {
     if (!this.target || this.target.hp <= 0) {
       this.target = get_creep_nearest(SET,this.x,this.y,100);
@@ -379,20 +428,24 @@ var Missile = function(SET,tower,target) {
             mx+size * Math.cos(tth - 2.35619449), my+size * Math.sin(tth + 2.35619449),
             mx+size * Math.cos(tth + 2.35619449), my+size * Math.sin(tth - 2.35619449));
   }
-  return m;
+
 };
 
 var Laser = function(SET,tower,target) {
   var l = new Object();
   Object.extend(l, Weapon(SET,tower,target));
+  l.objtype = "Laser";
   l.tail = 20; // length of laser's graphic
   l.color = color(0,0,255);
   l.speed = 10;
   l.proximity = 10;
+  return l;
+};
+imbueWithFunctions["Laser"] = function (l, SET) {
+  imbueWithFunctions["Weapon"](l, SET);
   l.draw = function() {
-    var path = calc_path(l.x,l.y,tower.x_mid,tower.y_mid,l.tail);
+    var path = calc_path(l.x,l.y,this.tower.x_mid,this.tower.y_mid,l.tail);
     stroke(l.color);
     line(l.x,l.y,l.x+path.x,l.y+path.y);
   }
-  return l;
 };

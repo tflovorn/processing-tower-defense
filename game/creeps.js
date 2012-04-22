@@ -17,13 +17,20 @@
  */
 var CreepHpUpdater = function(SET, creep) {
   var chp = new Object();
+  chp.creep = creep;
+  chp.objtype = "CreepHpUpdater";
+  imbueWithFunctions[chp.objtype](chp, SET);
+  chp.should_die = false;
+  assign_to_depth(SET, chp, SET.system_render_level);
+  return chp;
+}
+imbueWithFunctions["CreepHpUpdater"] = function (chp, SET) {
   Object.extend(chp, InertDrawable);
   chp.update = function() {
-    WIDGETS.creep_hp.innerHTML = creep.hp;
+    WIDGETS.creep_hp.innerHTML = chp.creep.hp;
   }
-  chp.should_die = false;
   chp.is_dead = function() {
-    if (chp.should_die || !creep || !SET.state || SET.state.name() != "CreepSelectMode" || creep.is_dead()) {
+    if (chp.should_die || !chp.creep || !SET.state || SET.state.name() != "CreepSelectMode" || chp.creep.is_dead()) {
       unselect(SET);
       if (chp.kz)
         chp.kz.is_dead = function() { return true; };
@@ -33,13 +40,9 @@ var CreepHpUpdater = function(SET, creep) {
   }
   chp.draw = function() {
     if (chp.kz) chp.kz.is_dead = function() { return true; };
-    chp.kz = KillZone(SET,creep.x,creep.y,15);
+    chp.kz = KillZone(SET,chp.creep.x,chp.creep.y,15);
   }
-
-  assign_to_depth(SET, chp, SET.system_render_level);
-  return chp;
-}
-
+};
 
 /*
   ### Types of creeps
@@ -151,6 +154,8 @@ var BossMixin = function(creep) {
 var Creep = function(SET, wave) {
   var cp = SET.creeps_spawned;
   var c = new Object();
+  c.objtype = "Creep";
+  imbueWithFunctions[c.objtype](c, SET);
   c.terrain = {"entrance":1.0,"exit":1.0,"mountain":0.75,"water":0.5,"neutral":1.0,"power plant":2.0};
 
   c.x = SET.entrance.x_mid;
@@ -161,6 +166,15 @@ var Creep = function(SET, wave) {
   c.value = SET.creep_value + wave;
   c.speed = SET.creep_speed;
   c.last = SET.now;
+
+  c.ignores_towers = false;
+
+  c.creep_type = "Normal Creep";
+  SET.creeps_spawned++;
+  assign_to_depth(SET, c, SET.creep_render_level);
+  return c;
+};
+imbueWithFunctions["Creep"] = function (c, SET) {
   c.is_dead = function() {
     if (this.hp <= 0) {
       SET.gold += this.value;
@@ -180,9 +194,6 @@ var Creep = function(SET, wave) {
     }
     return c.speed * terrain_modifier;
   }
-
-  c.ignores_towers = false;
-
   c.update = function() {
     var gpos = pixel_to_grid(SET, this);
     this.gx = gpos.gx;
@@ -226,16 +237,12 @@ var Creep = function(SET, wave) {
     fill(this.color);
     ellipse(this.x,this.y,this.size,this.size);
   }
-  c.creep_type = "Normal Creep";
   c.display_stats = function() {
     WIDGETS.creep_type.innerHTML = this.creep_type;
     WIDGETS.creep_hp.innerHTML = this.hp;
     WIDGETS.creep_value.innerHTML = this.value + " gold";
     WIDGETS.creep.style.display = "block";
   }
-  SET.creeps_spawned++;
-  assign_to_depth(SET, c, SET.creep_render_level);
-  return c;
 };
 
 /* pathfinding */

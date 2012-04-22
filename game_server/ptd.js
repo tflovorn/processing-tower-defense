@@ -1013,8 +1013,7 @@ var attempt_to_enter_ui_mode = function(SET, mode, error_msg) {
     unselect(SET);
     if (mode.can_enter_mode()) {
       SET.state = mode;
-      var pos = mouse_pos();
-      SET.state.set_up(pos.x,pos.y);
+      SET.state.set_up(0,0);
     }
     else if (!error_msg)
       {error("Not enough gold, you need at least " + mode.cost)};

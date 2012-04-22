@@ -20,6 +20,93 @@ example for others.
 */
 
 /*
+  Douglas Crockford's cycle-remover for serialization:
+  https://github.com/douglascrockford/JSON-js/blob/master/cycle.js
+*/
+
+decycle = function decycle(object) {
+    'use strict';
+
+// Make a deep copy of an object or array, assuring that there is at most
+// one instance of each object or array in the resulting structure. The
+// duplicate references (which might be forming cycles) are replaced with
+// an object of the form
+//      {$ref: PATH}
+// where the PATH is a JSONPath string that locates the first occurance.
+// So,
+//      var a = [];
+//      a[0] = a;
+//      return JSON.stringify(JSON.decycle(a));
+// produces the string '[{"$ref":"$"}]'.
+
+// JSONPath is used to locate the unique object. $ indicates the top level of
+// the object or array. [NUMBER] or [STRING] indicates a child member or
+// property.
+
+    var objects = [],   // Keep a reference to each unique object or array
+        paths = [];     // Keep the path to each unique object or array
+
+    return (function derez(value, path) {
+
+// The derez recurses through the object, producing the deep copy.
+
+        var i,          // The loop counter
+            name,       // Property name
+            nu;         // The new object or array
+
+        switch (typeof value) {
+        case 'object':
+
+// typeof null === 'object', so get out if this value is not really an object.
+
+            if (!value) {
+                return null;
+            }
+
+// If the value is an object or array, look to see if we have already
+// encountered it. If so, return a $ref/path object. This is a hard way,
+// linear search that will get slower as the number of unique objects grows.
+
+            for (i = 0; i < objects.length; i += 1) {
+                if (objects[i] === value) {
+                    return {$ref: paths[i]};
+                }
+            }
+
+// Otherwise, accumulate the unique value and its path.
+
+            objects.push(value);
+            paths.push(path);
+
+// If it is an array, replicate the array.
+
+            if (Object.prototype.toString.apply(value) === '[object Array]') {
+                nu = [];
+                for (i = 0; i < value.length; i += 1) {
+                    nu[i] = derez(value[i], path + '[' + i + ']');
+                }
+            } else {
+
+// If it is an object, replicate the object.
+
+                nu = {};
+                for (name in value) {
+                    if (Object.prototype.hasOwnProperty.call(value, name)) {
+                        nu[name] = derez(value[name],
+                            path + '[' + JSON.stringify(name) + ']');
+                    }
+                }
+            }
+            return nu;
+        case 'number':
+        case 'string':
+        case 'boolean':
+            return value;
+        }
+    }(object, '$'));
+};
+
+/*
   Douglas Crockford's cycle-restorer for deserialization.
   From: https://github.com/douglascrockford/JSON-js/blob/master/cycle.js
 */
@@ -49,7 +136,7 @@ retrocycle = function retrocycle($) {
     var px =
         /^\$(?:\[(?:\d+|\"(?:[^\\\"\u0000-\u001f]|\\([\\\"\/bfnrt]|u[0-9a-zA-Z]{4}))*\")\])*$/;
 
-    (function rez(value) {
+    (function rez(value, recurseCount) {
 
 // The rez function walks recursively through the object looking for $ref
 // properties. When it finds one that has a value that is a path, then it
@@ -57,9 +144,12 @@ retrocycle = function retrocycle($) {
 // the path.
 
         var i, item, name, path;
-
+        var arbitraryLimit = 400;
+        if (recurseCount > arbitraryLimit) {
+          return;
+        }
         if (value && typeof value === 'object') {
-            if (Object.prototype.toString.apply(value) === '[object Array]') {
+            if (isArray(value)) {
                 for (i = 0; i < value.length; i += 1) {
                     item = value[i];
                     if (item && typeof item === 'object') {
@@ -67,7 +157,7 @@ retrocycle = function retrocycle($) {
                         if (typeof path === 'string' && px.test(path)) {
                             value[i] = eval(path);
                         } else {
-                            rez(item);
+                            rez(item, recurseCount + 1);
                         }
                     }
                 }
@@ -80,14 +170,14 @@ retrocycle = function retrocycle($) {
                             if (typeof path === 'string' && px.test(path)) {
                                 value[name] = eval(path);
                             } else {
-                                rez(item);
+                                rez(item, recurseCount + 1);
                             }
                         }
                     }
                 }
             }
         }
-    }($));
+    }($, 0));
     return $;
 };
 
@@ -137,34 +227,37 @@ var isPlainObject =  function( obj ) {
     return key === undefined || hasOwn.call( obj, key );
 }
 
+// Lazy, bad implementation to deal with mysterious issue.
+// Array.isArray(obj) blows the call stack for some reason.
 var isArray = function (obj) {
-  return typeof(obj) === "array";
+  if (obj.objtype !== undefined || obj.indexOf === undefined) {
+    return false;
+  }
+  if (obj.pop !== undefined && obj.push !== undefined && obj.length !== undefined && obj.reverse !== undefined && obj.sort !== undefined) {
+    return true;
+  }
+  return false;
 };
 
 var jqExtend = function() {
+  var SET = arguments[0];
   var options, name, src, copy, copyIsArray, clone,
-    target = arguments[0] || {},
-    i = 1,
+    target = arguments[1] || {},
+    i = 2,
     length = arguments.length,
     deep = false;
 
   // Handle a deep copy situation
   if ( typeof target === "boolean" ) {
     deep = target;
-    target = arguments[1] || {};
+    target = arguments[2] || {};
     // skip the boolean and the target
-    i = 2;
+    i = 3;
   }
 
   // Handle case when target is a string or something (possible in deep copy)
   if ( typeof target !== "object" && isFunction(target) ) {
     target = {};
-  }
-
-  // extend jQuery itself if only one argument is passed
-  if ( length === i ) {
-    target = this;
-    --i;
   }
 
   for ( ; i < length; i++ ) {
@@ -185,10 +278,11 @@ var jqExtend = function() {
           continue;
         }
 
-        // Ignore functions
+        // Ignore functions passed in.
         if (isFunction(copy)) {
           continue;
         }
+
 
         // Recurse if we're merging plain objects or arrays
         if ( deep && copy && ( isPlainObject(copy) || (copyIsArray = isArray(copy)) ) ) {
@@ -201,11 +295,21 @@ var jqExtend = function() {
           }
 
           // Never move original objects, clone them
-          target[ name ] = extend( deep, clone, copy );
+          target[ name ] = jqExtend(SET, deep, clone, copy );
+          // Give the object the functions it needs.
+          if (copy.objtype !== undefined) {
+//            console.log("in extend-imbue on " + copy.objtype);
+            imbueWithFunctions[copy.objtype](target[name], SET);
+          }
 
         // Don't bring in undefined values
         } else if ( copy !== undefined ) {
           target[ name ] = copy;
+          // Give the object the functions it needs.
+          if (copy.objtype !== undefined) {
+//            console.log("in extend-imbue on " + copy.objtype);
+            imbueWithFunctions[copy.objtype](target[name], SET);
+          }
         }
       }
     }
@@ -227,9 +331,6 @@ var jqExtend = function() {
 // rendered at layer 0 will draw itself ontop of anything
 // rendered before layer 0.
 var assign_to_depth = function(SET, obj,depth) {
-  //console.log(SET);
-  //console.log(obj);
-  //console.log(depth);
   var rendering_group = SET.rendering_groups[depth];
   if (rendering_group == undefined) SET.rendering_groups[depth] = [obj];
   else rendering_group.push(obj);
@@ -238,6 +339,9 @@ var assign_to_depth = function(SET, obj,depth) {
 // updates any groups
 var update_groups = function(groups) {
   var obj_update = function(x) {
+    if (x.update === undefined) {
+//      console.log("update undefined on " + x.objtype);
+    }
     if (x != undefined && x.update !== undefined) x.update();
   };
   var obj_is_alive = function(x) {
@@ -434,6 +538,12 @@ Object.extend(InertDrawable, {
 // at the very beginning of a rendering cycle
 var SettingUpdater = function(SET) {
   var su = new Object();
+  su.objtype = "SettingUpdater";
+  imbueWithFunctions[su.objtype](su, SET);
+  assign_to_depth(SET, su, SET.system_render_level);
+  return su;
+};
+imbueWithFunctions["SettingUpdater"] = function (su, SET) {
   Object.extend(su, InertDrawable);
   su.update = function() {
     SET.frame += 1;
@@ -446,14 +556,17 @@ var SettingUpdater = function(SET) {
       SET.now += 1000.0 / SET.framerate;
     }
   }
-  assign_to_depth(SET, su, SET.system_render_level);
-  return su;
 };
 
 var UIUpdater = function(SET) {
   var uiu = new Object();
+  uiu.objtype = "UIUpdater";
+  imbueWithFunctions[uiu.objtype](uiu, SET);
+  assign_to_depth(SET, uiu, SET.system_render_level);
+  return uiu;
+}
+imbueWithFunctions["UIUpdater"] = function (uiu, SET) {
   Object.extend(uiu, InertDrawable);
-
   uiu.update = function() {
     WIDGETS.creep_variety.innerHTML = SET.creep_variety;
     WIDGETS.score.innerHTML = SET.score;
@@ -462,13 +575,16 @@ var UIUpdater = function(SET) {
     WIDGETS.nukes_left.innerHTML = SET.nukes + " left";
     WIDGETS.till_next_wave.innerHTML = Math.floor(((SET.creep_wave_controller.last + SET.creep_wave_controller.delay) - SET.now) / 1000)
   };
-  assign_to_depth(SET, uiu, SET.system_render_level);
-  return uiu;
-}
-
+};
 
 var Grid = function(SET) {
   var grid = new Object();
+  grid.objtype = "Grid";
+  imbueWithFunctions[grid.objtype](grid, SET);
+  assign_to_depth(SET, grid, SET.grid_render_level);
+  return grid;
+};
+imbueWithFunctions["Grid"] = function (grid, SET) {
   Object.extend(grid, InertDrawable);
   grid.draw = function() {
     stroke(SET.grid_color);
@@ -484,14 +600,12 @@ var Grid = function(SET) {
       line(0,i,w,i);
     }
   };
-  assign_to_depth(SET, grid, SET.grid_render_level);
-  return grid;
 };
-
 
 var GridSquare = function(SET,gx,gy,color) {
   var square = new Object();
-  Object.extend(square, InertDrawable);
+  square.objtype = "GridSquare";
+  imbueWithFunctions[square.objtype](square, SET);
   square.gx = gx;
   square.gy = gy;
   square.x = grid_to_pixel(SET,gx);
@@ -501,21 +615,36 @@ var GridSquare = function(SET,gx,gy,color) {
   square.y_mid = mid.y;
   return square;
 }
+imbueWithFunctions["GridSquare"] = function (square, SET) {
+  Object.extend(square, InertDrawable);
+};
 
 var Square = function(SET,gx,gy,color) {
   var square = GridSquare(SET,gx,gy,color);
+  square.objtype = "Square";
+  imbueWithFunctions[square.objtype](square, SET);
   square.color = color;
+  assign_to_depth(SET, square, SET.square_render_level);
+  return square;
+};
+imbueWithFunctions["Square"] = function (square, SET) {
+  imbueWithFunctions["GridSquare"](square);
   square.draw = function() {
     noStroke();
     fill(this.color);
     draw_square_in_grid(SET,this.gx,this.gy);
-  }
-  assign_to_depth(SET, square, SET.square_render_level);
-  return square;
+  };
 };
+
 var ExitSquare = function(SET,gx,gy) {
   var square = Square(SET,gx,gy,SET.exit_color);
+  square.objtype = "ExitSquare";
+  imbueWithFunctions[square.objtype](square, SET);
   square.type = "exit";
+  return square;
+}
+imbueWithFunctions["ExitSquare"] = function (square, SET) {
+  imbueWithFunctions["Square"](square);
   square.draw = function() {
     noStroke();
     fill(SET.exit_color);
@@ -524,9 +653,7 @@ var ExitSquare = function(SET,gx,gy) {
     stroke("black");
     draw_circle_in_grid(SET,this.gx,this.gy);
   }
-  return square;
-}
-
+};
 
 var spawn_wave = function(SET) {
   if (!SET.state ||
@@ -687,20 +814,20 @@ now.receiveGameInfo = function (info) {
 
 // Copy properties of source into dest, ignoring functions and saveAttrs.
 var copySet = function (dest, source) {
-  jqExtend(true, dest, source);
+  jqExtend(dest, true, dest, source);
 };
 
 // Main game loop:
 // Begin a game of tower defense using the given sets.
 now.startGame = function (mySET, otherSET) {
-  mySET = retrocycle(mySET);
-  otherSET = retrocycle(mySET);
   setup = function() {
     $('#pause_button').html("Pause");
     set_canvas("tower_defense");
     reset_game();
     copySet(SETS[0], mySET);
     copySet(SETS[1], otherSET);
+    SETS[0] = retrocycle(SETS[0]);
+    SETS[1] = retrocycle(SETS[1]);
     size(SETS[1].x_offset + SETS[1].width
        , SETS[1].y_offset + SETS[1].height);
     frameRate(SETS[0].framerate);
@@ -721,9 +848,9 @@ now.startGame = function (mySET, otherSET) {
 };
 
 // Update ffSET until its time matches comparisonSET.
-var fastforwardSet = function (ffSET, comparisonSET) {
+var fastforwardSet = function (ffSET, comparisonFrames) {
   ffSET.fastforward = true;
-  while (ffSET.frame < comparisonSET.frame) {
+  while (ffSET.frame < comparisonFrames) {
     update_groups(ffSET.rendering_groups);
   }
   ffSET.fastforward = false;
@@ -733,8 +860,10 @@ var fastforwardSet = function (ffSET, comparisonSET) {
 now.syncSets = function (mySET, otherSET) {
   mySET = retrocycle(mySET);
   otherSET = retrocycle(mySET);
-  fastforwardSet(mySET, SETS[0]);
-  fastforwardSet(otherSET, SETS[1]);
+  var myFrames = SETS[0].frame;
+  var otherFrames = SETS[1].frame;
   copySet(SETS[0], mySET);
   copySet(SETS[1], otherSET);
+  fastforwardSet(SETS[0], myFrames);
+  fastforwardSet(SETS[1], otherFrames);
 };

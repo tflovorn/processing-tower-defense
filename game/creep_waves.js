@@ -1,9 +1,15 @@
 var CreepWaveController = function(SET) {
   var cwc = new Object();
-  Object.extend(cwc, InertDrawable);
+  cwc.objtype = "CreepWaveController";
+  imbueWithFunctions[cwc.objtype](cwc, SET);
   cwc.delay = 25000;
   cwc.last = SET.now-20000;
   cwc.wave = 1;
+  assign_to_depth(SET, cwc, SET.system_render_level);
+  return cwc;
+};
+imbueWithFunctions["CreepWaveController"] = function (cwc, SET) {
+  Object.extend(cwc, InertDrawable);
   cwc.spawn_wave = function(bonus) {
     WIDGETS.wave.innerHTML = this.wave;
     var settings = {wave:this.wave, bonus:bonus};
@@ -40,18 +46,24 @@ var CreepWaveController = function(SET) {
       this.spawn_wave();
     }
   }
-  assign_to_depth(SET, cwc, SET.system_render_level);
-  return cwc;
+
 };
 
 var CreepWave = function(SET, settings) {
   var cw = new Object();
-  Object.extend(cw, InertDrawable);
+  cw.objtype = "CreepWave";
+  imbueWithFunctions[cw.objtype](cw, SET);
   cw.remaining = 20;
   cw.wave = 1;
   cw.last = 0;
   cw.interval = 1000;
   Object.extend(cw, settings);
+  assign_to_depth(SET, cw, SET.system_render_level);
+  SET.creep_variety = "Normal Creeps";
+  return cw;
+};
+imbueWithFunctions["CreepWave"] = function (cw, SET) {
+  Object.extend(cw, InertDrawable);
   cw.spawn_creep = function() { Creep(SET, this.wave); };
   cw.spawn = function() {
     this.remaining--;
@@ -69,9 +81,6 @@ var CreepWave = function(SET, settings) {
       this.spawn();
     }
   }
-  assign_to_depth(SET, cw, SET.system_render_level);
-  SET.creep_variety = "Normal Creeps";
-  return cw;
 };
 
 var create_creep_wave_with_mixins = function(SET, settings, mixins) {
