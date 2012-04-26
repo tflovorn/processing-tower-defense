@@ -97,7 +97,7 @@ var default_set = function(x_offset, y_offset) {
   set.half_pixels_per_square = (1.0 * set.pixels_per_square) / 2;
   set.height = 450;
   set.width = 600;
-  set.framerate = 60;
+  set.framerate = 15;
   set.gheight = Math.floor(set.height / set.pixels_per_square);
   set.gwidth = Math.floor(set.width / set.pixels_per_square);
 

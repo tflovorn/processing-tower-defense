@@ -69,7 +69,8 @@ decycle = function decycle(object) {
 
             for (i = 0; i < objects.length; i += 1) {
                 if (objects[i] === value) {
-                    return {$ref: paths[i]};
+                    return null;
+                    //return {$ref: paths[i]};
                 }
             }
 
@@ -144,8 +145,8 @@ retrocycle = function retrocycle($) {
 // the path.
 
         var i, item, name, path;
-        var arbitraryLimit = 400;
-        if (recurseCount > arbitraryLimit) {
+        var recursionLimit = 50;
+        if (recurseCount > recursionLimit) {
           return;
         }
         if (value && typeof value === 'object') {
@@ -227,8 +228,8 @@ var isPlainObject =  function( obj ) {
     return key === undefined || hasOwn.call( obj, key );
 }
 
-// Lazy, bad implementation to deal with mysterious issue.
-// Array.isArray(obj) blows the call stack for some reason.
+// Lazy, bad implementation to deal with mysterious issue:
+// Array.isArray(obj) blows the call stack.
 var isArray = function (obj) {
   if (obj.objtype !== undefined || obj.indexOf === undefined) {
     return false;
@@ -376,7 +377,7 @@ var default_set = function(x_offset, y_offset) {
   set.half_pixels_per_square = (1.0 * set.pixels_per_square) / 2;
   set.height = 450;
   set.width = 600;
-  set.framerate = 60;
+  set.framerate = 15;
   set.gheight = Math.floor(set.height / set.pixels_per_square);
   set.gwidth = Math.floor(set.width / set.pixels_per_square);
 
@@ -628,6 +629,17 @@ var Square = function(SET,gx,gy,color) {
   return square;
 };
 imbueWithFunctions["Square"] = function (square, SET) {
+  if (square.type === "neutral") {
+    square.color = color(200,200,200);
+  } else if (square.type === "water") {
+    square.color = color(78,150,236);
+  } else if (square.type === "mountain") {
+    square.color = color(228,51,51);
+  } else if (square.type === "power plant") {
+    square.color = color(189,194,78);
+  } else if (square.type === "entrance") {
+    square.color = SET.entrance_color;
+  }
   imbueWithFunctions["GridSquare"](square);
   square.draw = function() {
     noStroke();
@@ -653,6 +665,7 @@ imbueWithFunctions["ExitSquare"] = function (square, SET) {
     stroke("black");
     draw_circle_in_grid(SET,this.gx,this.gy);
   }
+  square.color = SET.exit_color;
 };
 
 var spawn_wave = function(SET) {
@@ -858,12 +871,12 @@ var fastforwardSet = function (ffSET, comparisonFrames) {
 
 // Synchronize the local SETS with the ones provided by the server.
 now.syncSets = function (mySET, otherSET) {
-  mySET = retrocycle(mySET);
-  otherSET = retrocycle(mySET);
   var myFrames = SETS[0].frame;
   var otherFrames = SETS[1].frame;
   copySet(SETS[0], mySET);
   copySet(SETS[1], otherSET);
+  mySET = retrocycle(mySET);
+  otherSET = retrocycle(mySET);
   fastforwardSet(SETS[0], myFrames);
   fastforwardSet(SETS[1], otherFrames);
 };

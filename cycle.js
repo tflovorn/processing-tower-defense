@@ -48,6 +48,7 @@ exports.decycle = function decycle(object) {
 
             for (i = 0; i < objects.length; i += 1) {
                 if (objects[i] === value) {
+//                    console.log("cycle in " + objects[i].objtype);
                     return {$ref: paths[i]};
                 }
             }

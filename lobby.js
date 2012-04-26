@@ -257,7 +257,7 @@ everyone.now.clientReady = function () {
   }
   client.ready = true;
   nowjs.getGroup(room.id).now.receiveRoomInfo(room.info(), false)
-  if (room.allReady()) {
+  if (room.allReady() && room.clients.length > 1) {
     startGame(room);
   }
 };
@@ -270,7 +270,7 @@ var startGame = function (room) {
     return;
   }
   // check if all clients are still ready
-  if (!room.allReady()) {
+  if (!room.allReady() || room.clients.length < 2) {
     return;
   }
 
