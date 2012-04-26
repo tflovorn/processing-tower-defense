@@ -377,7 +377,7 @@ var default_set = function(x_offset, y_offset) {
   set.half_pixels_per_square = (1.0 * set.pixels_per_square) / 2;
   set.height = 450;
   set.width = 600;
-  set.framerate = 15;
+  set.framerate = 30;
   set.gheight = Math.floor(set.height / set.pixels_per_square);
   set.gwidth = Math.floor(set.width / set.pixels_per_square);
 
@@ -841,8 +841,8 @@ now.startGame = function (mySET, otherSET) {
     copySet(SETS[1], otherSET);
     SETS[0] = retrocycle(SETS[0]);
     SETS[1] = retrocycle(SETS[1]);
-    size(SETS[1].x_offset + SETS[1].width
-       , SETS[1].y_offset + SETS[1].height);
+    size(SETS[0].x_offset + SETS[1].x_offset + SETS[1].width
+       , SETS[0].y_offset + SETS[1].y_offset + SETS[1].height);
     frameRate(SETS[0].framerate);
     mouseMoved(on_mouse_moved);
     mousePressed(on_mouse_press);
