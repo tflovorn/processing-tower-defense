@@ -423,10 +423,27 @@ var start_tower_defense = function(reportOutcome) {
 
   // TODO build a tower on SETS[player] of given type at given position
   hooks.buildTower = function(player, type, gx, gy) {
-    var SET = SETS[player];
-    var towerCost = 50; // TODO set appropriate price
+    var SET = SETS[player]
+      , towerCost
+      , towerConstructor;
     // TODO check pathfinding
 
+    // select the appropriate tower
+    if (type === "BuildLaserTowerMode") {
+      towerConstructor = LaserTower;
+      towerCost = 25;
+    } else if (type === "BuildMissileTowerMode") {
+      towerConstructor = MissileTower;
+      towerCost = 100;
+    } else if (type === "BuildCannonTowerMode") {
+      towerConstructor = CannonTower;
+      towerCost = 75;
+    } else if (type === "BuildGatlingTowerMode") {
+      towerConstructor = GatlingTower;
+      towerCost = 50;
+    } else {
+      return;
+    }
     // check gold suppy, remove gold
     if (SET.gold < towerCost) {
       return
@@ -434,7 +451,6 @@ var start_tower_defense = function(reportOutcome) {
       SET.gold -= towerCost;
     }
     // build the tower
-    var towerConstructor = LaserTower;
     towerConstructor(SET, gx, gy);
   };
 
