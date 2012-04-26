@@ -875,8 +875,8 @@ now.syncSets = function (mySET, otherSET) {
   var otherFrames = SETS[1].frame;
   copySet(SETS[0], mySET);
   copySet(SETS[1], otherSET);
-  mySET = retrocycle(mySET);
-  otherSET = retrocycle(mySET);
+  SETS[0] = retrocycle(SETS[0]);
+  SETS[1] = retrocycle(SETS[1]);
   fastforwardSet(SETS[0], myFrames);
   fastforwardSet(SETS[1], otherFrames);
 };

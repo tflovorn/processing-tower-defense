@@ -133,6 +133,7 @@ var BuildTowerMode = function(SET) {
     this.tower(SET,gpos.gx,gpos.gy);
     SET.gold -= this.cost;
     reset_pathfinding(SET);
+    now.buildTower(this.name(), gpos.gx, gpos.gy);
   };
   this.can_enter_mode = function(x,y) {
     if (SET.gold >= this.cost) return true;

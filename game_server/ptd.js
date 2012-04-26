@@ -423,7 +423,19 @@ var start_tower_defense = function(reportOutcome) {
 
   // TODO build a tower on SETS[player] of given type at given position
   hooks.buildTower = function(player, type, gx, gy) {
+    var SET = SETS[player];
+    var towerCost = 50; // TODO set appropriate price
+    // TODO check pathfinding
 
+    // check gold suppy, remove gold
+    if (SET.gold < towerCost) {
+      return
+    } else {
+      SET.gold -= towerCost;
+    }
+    // build the tower
+    var towerConstructor = LaserTower;
+    towerConstructor(SET, gx, gy);
   };
 
   // TODO start a wave on the opposite player (SETS[target])

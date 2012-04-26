@@ -31,3 +31,8 @@ The npm dependencies are:
 [ams](https://github.com/kof/node-ams)
 
 [mysql-libmysqlclient](http://sannis.github.com/node-mysql-libmysqlclient/index.html)
+
+Contains [headjs](http://headjs.com/) as a submodule. To obtain submodules after cloning this repository, do:
+
+    git submodule init
+    git submodule update
