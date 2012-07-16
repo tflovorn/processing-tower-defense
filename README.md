@@ -4,6 +4,10 @@ Derived from [processing-tower-defense](https://github.com/rictic/processing-tow
 
 Details of the multiplayer implementation inspired by [setgame](https://github.com/vincentwoo/setgame) and [nowjs-multiplayer-map](https://github.com/rockhowse/nowjs-multiplayer-map).
 
+# ~Warning~
+
+This branch was a class project made under a tight deadline. The security is terrible. Until this is fixed, you should not host it on a server which is visible outside of localhost!
+
 # Dependencies
 
 Requires Node.js and npm ([install instructions here](https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager)).
